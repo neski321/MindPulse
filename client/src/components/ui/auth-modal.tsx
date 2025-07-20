@@ -16,6 +16,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
 
@@ -33,6 +34,14 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setError(null)
     if (!name.trim()) {
       setError("Name is required")
+      return
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long")
       return
     }
     try {
@@ -61,6 +70,19 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     } catch (e: any) {
       setError(e.message || "Guest login failed")
     }
+  }
+
+  const clearForm = () => {
+    setEmail("")
+    setPassword("")
+    setConfirmPassword("")
+    setName("")
+    setError(null)
+  }
+
+  const switchMode = (newMode: "login" | "signup") => {
+    setMode(newMode)
+    clearForm()
   }
 
   const containerVariants = {
@@ -177,11 +199,49 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
               />
             </div>
 
+            <AnimatePresence mode="wait">
+              {mode === "signup" && (
+                <motion.div
+                  key="confirm-password-field"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Confirm Password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={loading}
+                      className={`pl-10 rounded-2xl border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white/80 backdrop-blur-sm ${
+                        confirmPassword && password !== confirmPassword ? 'border-red-300 focus:border-red-400 focus:ring-red-400' : ''
+                      }`}
+                    />
+                    {confirmPassword && password !== confirmPassword && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute -bottom-6 left-0 text-xs text-red-500"
+                      >
+                        Passwords do not match
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={mode === "login" ? handleLogin : handleSignup}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 rounded-2xl py-3 font-medium shadow-lg transition-all duration-300"
+                disabled={
+                  loading || 
+                  (mode === "signup" && (!email || !password || !confirmPassword || !name.trim() || password !== confirmPassword))
+                }
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 rounded-2xl py-3 font-medium shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <motion.div
@@ -241,7 +301,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="text-blue-600 hover:text-blue-700 font-medium underline transition-colors"
-                    onClick={() => setMode("signup")}
+                    onClick={() => switchMode("signup")}
                   >
                     Sign Up
                   </motion.button>
@@ -253,7 +313,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="text-blue-600 hover:text-blue-700 font-medium underline transition-colors"
-                    onClick={() => setMode("login")}
+                    onClick={() => switchMode("login")}
                   >
                     Sign In
                   </motion.button>

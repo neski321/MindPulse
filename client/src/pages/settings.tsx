@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { SettingsIcon, Bell, Moon, Shield, Heart, HelpCircle, Mail, User, Sparkles, Star, Phone, Trash2 } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { SettingsIcon, Bell, Moon, Shield, Heart, HelpCircle, Mail, User, Sparkles, Star, Phone, Trash2, Edit3, Save, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/AuthContext"
 import { useSettings } from "@/contexts/SettingsContext"
-import { getAuth, deleteUser } from "firebase/auth"
+import { getAuth, deleteUser, updateEmail, updateProfile } from "firebase/auth"
 import { CrisisResources } from "@/components/crisis-resources"
 import {
   Dialog,
@@ -46,7 +47,7 @@ const itemVariants = {
 
 export default function Settings() {
   const { toast } = useToast()
-  const { user, loading, logout } = useAuth()
+  const { user, loading, logout, refreshUser } = useAuth()
   const { cursorEffects, setCursorEffects } = useSettings()
   const [notifications, setNotifications] = useState(true)
   const [emailUpdates, setEmailUpdates] = useState(true)
@@ -56,6 +57,14 @@ export default function Settings() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Edit profile state
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: user?.name || "",
+    email: user?.email || ""
+  })
 
   const handleToggle = (setting: string, value: boolean) => {
     console.log(`${setting} toggled to: ${value}`)
@@ -79,6 +88,127 @@ export default function Settings() {
         description: "There was an error signing you out. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleEditProfile = () => {
+    setEditForm({
+      name: user?.name || "",
+      email: user?.email || ""
+    })
+    setIsEditingProfile(true)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false)
+    setEditForm({
+      name: user?.name || "",
+      email: user?.email || ""
+    })
+  }
+
+  const handleUpdateProfile = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User not found. Please try again.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!editForm.name.trim() || !editForm.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Name and email are required.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUpdatingProfile(true)
+
+    try {
+      // Update database first
+      const response = await fetch(`/api/users/${user.id}/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          email: editForm.email.trim(),
+          firebaseUid: user.firebaseUid
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update profile')
+      }
+
+      const data = await response.json()
+      
+      // Update Firebase if user has Firebase UID and email changed
+      if (user.firebaseUid && editForm.email !== user.email) {
+        const auth = getAuth()
+        const currentUser = auth.currentUser
+        
+        if (currentUser) {
+          try {
+            await updateEmail(currentUser, editForm.email.trim())
+            console.log("Firebase email updated successfully")
+          } catch (firebaseError: any) {
+            console.error("Firebase email update error:", firebaseError)
+            // If Firebase update fails, we still have the database update
+            // Show a warning but don't fail the entire operation
+            toast({
+              title: "Profile Updated",
+              description: "Profile updated in database. Firebase email update requires recent authentication.",
+              variant: "default",
+            })
+            setIsEditingProfile(false)
+            setIsUpdatingProfile(false)
+            return
+          }
+        }
+      }
+
+      // Update Firebase display name if name changed
+      if (user.firebaseUid && editForm.name !== user.name) {
+        const auth = getAuth()
+        const currentUser = auth.currentUser
+        
+        if (currentUser) {
+          try {
+            await updateProfile(currentUser, { displayName: editForm.name.trim() })
+            console.log("Firebase display name updated successfully")
+          } catch (firebaseError: any) {
+            console.error("Firebase display name update error:", firebaseError)
+            // Non-critical error, continue
+          }
+        }
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      })
+
+      setIsEditingProfile(false)
+      
+      // Refresh user data
+      await refreshUser()
+      
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      toast({
+        title: "Error updating profile",
+        description: error instanceof Error ? error.message : "There was an error updating your profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingProfile(false)
     }
   }
 
@@ -275,15 +405,29 @@ export default function Settings() {
                       </Badge>
                     </div>
                   </div>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-4">
-                    <Button
-                      onClick={handleSignOut}
-                      variant="outline"
-                      className="w-full rounded-2xl border-blue-200 text-blue-700 hover:bg-blue-50 bg-transparent"
-                    >
-                      Sign Out
-                    </Button>
-                  </motion.div>
+                  <div className="mt-4 space-y-3">
+                    {!user.isGuest && (
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={handleEditProfile}
+                          variant="outline"
+                          className="w-full rounded-2xl border-green-200 text-green-700 hover:bg-green-50 bg-transparent"
+                        >
+                          <Edit3 className="w-4 h-4 mr-2" />
+                          Edit Profile
+                        </Button>
+                      </motion.div>
+                    )}
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={handleSignOut}
+                        variant="outline"
+                        className="w-full rounded-2xl border-blue-200 text-blue-700 hover:bg-blue-50 bg-transparent"
+                      >
+                        Sign Out
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -293,6 +437,89 @@ export default function Settings() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Edit Profile Dialog */}
+        {isEditingProfile && (
+          <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
+            <DialogContent className="bg-white rounded-3xl max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3 text-gray-800">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <Edit3 className="w-5 h-5 text-white" />
+                  </div>
+                  Edit Profile
+                </DialogTitle>
+                <DialogDescription className="text-gray-600">
+                  Update your profile information. Changes will be saved to both your account and Firebase.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter your name"
+                    className="rounded-2xl border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter your email"
+                    className="rounded-2xl border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+                <div className="p-3 bg-blue-50 rounded-2xl border border-blue-200">
+                  <p className="text-sm text-blue-700">
+                    <strong>Note:</strong> Changing your email may require recent authentication in Firebase.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={isUpdatingProfile}
+                  className="rounded-2xl border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateProfile}
+                  disabled={isUpdatingProfile || !editForm.name.trim() || !editForm.email.trim()}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdatingProfile ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                        className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"
+                      />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Notifications */}
         <motion.div variants={itemVariants}>
