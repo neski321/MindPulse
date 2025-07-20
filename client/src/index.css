@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(210, 40%, 98%);
+  --muted-foreground: hsl(215, 16%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222, 84%, 4.9%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222, 84%, 4.9%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(207, 90%, 54%);
+  --radius: 0.5rem;
+
+  /* Mental Health App Custom Colors */
+  --soft-blue: hsl(207, 90%, 54%);
+  --soft-blue-light: hsl(207, 90%, 94%);
+  --calm-green: hsl(142, 71%, 45%);
+  --calm-green-light: hsl(142, 71%, 95%);
+  --warm-coral: hsl(14, 100%, 75%);
+  --mood-joy: hsl(48, 100%, 67%);
+  --mood-calm: hsl(197, 71%, 73%);
+  --mood-stressed: hsl(349, 100%, 85%);
+  --mood-anxious: hsl(277, 60%, 85%);
+  --mood-neutral: hsl(0, 0%, 88%);
+}
+
+.dark {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17%);
+  --muted-foreground: hsl(215, 16%, 46.9%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 17%);
+  --input: hsl(217, 32%, 17%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(217, 32%, 17%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(212, 97%, 87%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    padding-bottom: 80px; /* Space for bottom navigation */
+  }
+
+  /* Gentle animations for mental health app */
+  .breathe-animation {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .mood-gradient-joy {
+    background: linear-gradient(135deg, hsl(48, 100%, 67%), hsl(48, 100%, 77%));
+  }
+
+  .mood-gradient-calm {
+    background: linear-gradient(135deg, hsl(197, 71%, 73%), hsl(197, 71%, 83%));
+  }
+
+  .mood-gradient-neutral {
+    background: linear-gradient(135deg, hsl(0, 0%, 88%), hsl(0, 0%, 93%));
+  }
+
+  .mood-gradient-stressed {
+    background: linear-gradient(135deg, hsl(349, 100%, 85%), hsl(349, 100%, 90%));
+  }
+
+  .mood-gradient-anxious {
+    background: linear-gradient(135deg, hsl(277, 60%, 85%), hsl(277, 60%, 90%));
+  }
+
+  .intervention-gradient-breathing {
+    background: linear-gradient(135deg, hsl(142, 71%, 95%), hsl(207, 90%, 94%));
+  }
+
+  .intervention-gradient-meditation {
+    background: linear-gradient(135deg, hsl(269, 100%, 95%), hsl(340, 100%, 95%));
+  }
+
+  /* Accessibility improvements */
+  .focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Soft shadows for cards */
+  .card-shadow {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-shadow-hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Smooth transitions */
+  .transition-gentle {
+    transition: all 0.3s ease;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-pulse-gentle {
+    animation: pulseGentle 2s infinite;
+  }
+
+  @keyframes pulseGentle {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  .animate-breathing {
+    animation: breathing 4s infinite ease-in-out;
+  }
+
+  @keyframes breathing {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+  }
+}
