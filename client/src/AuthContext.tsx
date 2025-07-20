@@ -8,6 +8,7 @@ import {
   signOut,
   User as FirebaseUser,
   updateProfile,
+  getAuth,
 } from "firebase/auth";
 
 interface User {
@@ -26,6 +27,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -138,8 +140,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
+  const refreshUser = async () => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        const syncedUser = await fetchOrCreateUser(
+          currentUser.uid,
+          currentUser.email || undefined,
+          currentUser.displayName || undefined
+        );
+        setUser(syncedUser);
+      } catch (e) {
+        console.error("Error refreshing user:", e);
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, login, loginWithGoogle, logout, signInAsGuest }}>
+    <AuthContext.Provider value={{ user, loading, signUp, login, loginWithGoogle, logout, signInAsGuest, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

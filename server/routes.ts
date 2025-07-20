@@ -113,7 +113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/users/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const { name, email, username, password, oldPassword } = req.body;
+      const { name, email, username, password, oldPassword, firebaseUid } = req.body;
+      
       // If password is being changed, require oldPassword and check it
       if (password) {
         const user = await storage.getUser(userId);
@@ -122,13 +123,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Old password is incorrect" });
         }
       }
+      
       const updates: any = {};
       if (name) updates.name = name;
       if (email) updates.email = email;
       if (username) updates.username = username;
       if (password) updates.password = password;
+      
       const updatedUser = await storage.updateUser(userId, updates);
-      res.json({ user: { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, username: updatedUser.username } });
+      
+      // Return the updated user with all necessary fields
+      res.json({ 
+        user: { 
+          id: updatedUser.id, 
+          name: updatedUser.name, 
+          email: updatedUser.email, 
+          username: updatedUser.username,
+          isGuest: updatedUser.isGuest,
+          firebaseUid: updatedUser.firebaseUid
+        } 
+      });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Update user profile with Firebase email update
+  app.patch("/api/users/:id/profile", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { name, email, username, firebaseUid } = req.body;
+      
+      // Validate required fields
+      if (!name || !email) {
+        return res.status(400).json({ error: "Name and email are required" });
+      }
+      
+      // Check if email is already taken by another user
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ error: "Email is already taken by another user" });
+      }
+      
+      const updates: any = {};
+      if (name) updates.name = name;
+      if (email) updates.email = email;
+      if (username) updates.username = username;
+      
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      res.json({ 
+        user: { 
+          id: updatedUser.id, 
+          name: updatedUser.name, 
+          email: updatedUser.email, 
+          username: updatedUser.username,
+          isGuest: updatedUser.isGuest,
+          firebaseUid: updatedUser.firebaseUid
+        } 
+      });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
