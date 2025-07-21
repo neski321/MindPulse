@@ -23,7 +23,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const [cursorEffects, setCursorEffects] = useState(() => {
     // Load from localStorage on initialization
     const saved = localStorage.getItem('cursorEffects');
-    return saved !== null ? JSON.parse(saved) : true; // Default to true
+    return saved !== null ? JSON.parse(saved) : false; // Default to false (off)
   });
 
   // Save to localStorage whenever the setting changes

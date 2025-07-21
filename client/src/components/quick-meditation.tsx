@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Pause, RotateCcw, CheckCircle, Heart, Moon, Sun } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuickMeditationProps {
   onComplete?: () => void;
@@ -14,6 +18,34 @@ export default function QuickMeditation({ onComplete }: QuickMeditationProps) {
   const [currentPhase, setCurrentPhase] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const interventionMutation = useMutation({
+    mutationFn: async (meditation: any) => {
+      if (!user) return;
+      return apiRequest("POST", "/api/interventions", {
+        userId: user.id,
+        type: "meditation",
+        title: meditation.name,
+        content: `Completed a ${meditation.name} meditation`,
+        duration: Math.round(meditation.duration / 60),
+        completed: true,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Meditation Saved!",
+        description: "Your progress has been recorded.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving intervention",
+        description: String(error),
+        variant: "destructive",
+      });
+    },
+  });
 
   const meditationTypes = [
     {
@@ -82,6 +114,8 @@ export default function QuickMeditation({ onComplete }: QuickMeditationProps) {
             } else {
               setIsActive(false);
               setIsComplete(true);
+              // Save intervention completion
+              if (user && selectedMeditation) interventionMutation.mutate(selectedMeditation);
               onComplete?.();
               return 0;
             }
@@ -92,7 +126,7 @@ export default function QuickMeditation({ onComplete }: QuickMeditationProps) {
     }
 
     return () => clearInterval(interval);
-  }, [isActive, timeRemaining, currentPhase, selectedMeditation, onComplete]);
+  }, [isActive, timeRemaining, currentPhase, selectedMeditation, onComplete, user]);
 
   const startMeditation = (type: string) => {
     const meditation = meditationTypes.find(m => m.id === type);

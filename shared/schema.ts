@@ -32,7 +32,7 @@ export const interventions = pgTable("interventions", {
   content: text("content").notNull(),
   duration: integer("duration").notNull(), // minutes
   completed: boolean("completed").default(false),
-  completedAt: timestamp("completed_at"),
+  completedAt: timestamp("completed_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -46,12 +46,15 @@ export const communityPosts = pgTable("community_posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Step 1: Define postComments without parentCommentId
 export const postComments = pgTable("post_comments", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").references(() => communityPosts.id, { onDelete: "cascade" }).notNull(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   content: text("content").notNull(),
   anonymous: boolean("anonymous").default(true),
+  // @ts-expect-error: Self-referencing field is valid in Drizzle
+  parentCommentId: integer("parent_comment_id").references(() => postComments.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

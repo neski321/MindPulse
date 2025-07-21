@@ -3,6 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Play, Pause, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface BreathingExerciseProps {
   onClose: () => void;
@@ -16,6 +20,34 @@ export function BreathingExercise({ onClose }: BreathingExerciseProps) {
   const [timeLeft, setTimeLeft] = useState(4);
   const [cycle, setCycle] = useState(0);
   const [totalCycles] = useState(5);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const interventionMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+      return apiRequest("POST", "/api/interventions", {
+        userId: user.id,
+        type: "breathing",
+        title: "Breathing Exercise",
+        content: "Completed a guided breathing exercise.",
+        duration: 3, // 3 minutes
+        completed: true,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Breathing Exercise Saved!",
+        description: "Your progress has been recorded.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving intervention",
+        description: String(error),
+        variant: "destructive",
+      });
+    },
+  });
 
   const phases = {
     inhale: { duration: 4, next: "hold", text: "Breathe In" },
@@ -39,6 +71,8 @@ export function BreathingExercise({ onClose }: BreathingExerciseProps) {
         setCycle(prev => prev + 1);
         if (cycle + 1 >= totalCycles) {
           setIsActive(false);
+          // Save intervention completion
+          if (user) interventionMutation.mutate();
           return;
         }
       }
@@ -48,7 +82,7 @@ export function BreathingExercise({ onClose }: BreathingExerciseProps) {
     }
 
     return () => clearInterval(interval);
-  }, [isActive, timeLeft, phase, cycle, totalCycles]);
+  }, [isActive, timeLeft, phase, cycle, totalCycles, user]);
 
   const handleStart = () => {
     setIsActive(true);

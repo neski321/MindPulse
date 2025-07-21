@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useMutation } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { Users, Heart, MessageCircle, Send, Shield, Plus, Sparkles } from "lucid
 import { apiRequest, queryClient } from "@/lib/queryClient"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/AuthContext"
+import React from "react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -58,12 +59,132 @@ const cardHoverVariants = {
   },
 }
 
+// Utility to build a nested comment tree
+function buildCommentTree(comments: any[]) {
+  const map: Record<number, any> = {};
+  const roots: any[] = [];
+  comments.forEach(comment => {
+    map[comment.id] = { ...comment, children: [] };
+  });
+  comments.forEach(comment => {
+    if (comment.parentCommentId) {
+      map[comment.parentCommentId]?.children.push(map[comment.id]);
+    } else {
+      roots.push(map[comment.id]);
+    }
+  });
+  return roots;
+}
+
+// Recursive comment renderer
+function CommentNode({ comment, level, onReply, replyingToId, replyContent, setReplyContent, createCommentMutation, refetchComments }: any) {
+  // Explicitly type onReply
+  const handleReply = (id: number | null) => onReply(id);
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+
+    if (diffInHours < 1) return "Just now"
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 7) return `${diffInDays}d ago`
+    return date.toLocaleDateString()
+  }
+  return (
+    <div style={{ marginLeft: level * 24 }} className="mb-2">
+      <div className="bg-purple-50 rounded-xl p-3 text-sm text-gray-700">
+        <div className="flex items-center gap-2 mb-1">
+          {comment.anonymous && (
+            <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs rounded-full">Anonymous</Badge>
+          )}
+          <span className="text-xs text-gray-400">{formatTimeAgo(comment.createdAt)}</span>
+        </div>
+        <div>{comment.content}</div>
+        <div className="mt-1 flex gap-2">
+          <Button size="sm" variant="ghost" className="text-xs px-2 py-0.5" onClick={() => handleReply(comment.id as number)}>
+            Reply
+          </Button>
+        </div>
+        {replyingToId === comment.id && (
+          <div className="mt-2 space-y-2">
+            <Textarea
+              placeholder="Write your reply..."
+              value={replyContent}
+              onChange={e => setReplyContent(e.target.value)}
+              className="min-h-[40px] resize-none border-purple-200 focus:border-purple-400 focus:ring-purple-400 rounded-2xl"
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={async () => {
+                  await createCommentMutation.mutateAsync({ postId: comment.postId, content: replyContent.trim(), parentCommentId: comment.id as number });
+                  setReplyContent("");
+                  refetchComments();
+                  handleReply(null);
+                }}
+                disabled={!replyContent.trim() || createCommentMutation.isPending}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-2xl py-1 px-3 font-medium shadow-lg disabled:opacity-50"
+              >
+                {createCommentMutation.isPending ? "Replying..." : "Reply"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { handleReply(null); setReplyContent(""); }}
+                className="rounded-2xl px-3"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      {comment.children && comment.children.length > 0 && (
+        <div className="mt-2">
+          {comment.children.map((child: any) => (
+            <CommentNode
+              key={child.id}
+              comment={child}
+              level={level + 1}
+              onReply={handleReply}
+              replyingToId={replyingToId}
+              replyContent={replyContent}
+              setReplyContent={setReplyContent}
+              createCommentMutation={createCommentMutation}
+              refetchComments={refetchComments}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Community() {
   const { toast } = useToast()
   const { user, loading } = useAuth()
   const [newPostContent, setNewPostContent] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(true)
   const [showPostForm, setShowPostForm] = useState(false)
+  const [replyingToPostId, setReplyingToPostId] = useState<number | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const queryClient = useQueryClient();
+  const [openRepliesPostId, setOpenRepliesPostId] = useState<number | null>(null);
+  const {
+    data: openPostComments = [],
+    refetch: refetchOpenPostComments,
+    isFetching: isFetchingComments
+  } = useQuery<Comment[]>({
+    queryKey: openRepliesPostId ? ["/api/community/posts", openRepliesPostId, "comments"] : [],
+    queryFn: async () => {
+      if (!openRepliesPostId) return [];
+      const res = await fetch(`/api/community/posts/${openRepliesPostId}/comments`);
+      if (!res.ok) return [];
+      return (await res.json()).comments || [];
+    },
+    enabled: !!openRepliesPostId,
+  });
 
   const openAuthModal = () => {
     window.dispatchEvent(new CustomEvent("open-auth-modal"))
@@ -115,6 +236,55 @@ export default function Community() {
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] })
     },
   })
+
+  // Add mutation for creating a comment/reply
+  const createCommentMutation = useMutation({
+    mutationFn: async ({ postId, content, parentCommentId }: { postId: number; content: string; parentCommentId?: number | null }) => {
+      if (!user) throw new Error("No user");
+      const response = await apiRequest("POST", `/api/community/posts/${postId}/comments`, {
+        userId: user.id,
+        content,
+        anonymous: isAnonymous,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setReplyContent("");
+      setReplyingToPostId(null);
+      toast({
+        title: "Reply posted!",
+        description: "Your reply has been added.",
+      });
+      // Optionally: refetch comments for the post here
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error posting reply",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Fetch comments for a post
+  const useComments = (postId: number) => {
+    const query = useQuery<Comment[]>({
+      queryKey: ["/api/community/posts", postId, "comments"],
+      queryFn: async () => {
+        const res = await fetch(`/api/community/posts/${postId}/comments`);
+        if (!res.ok) return [];
+        return (await res.json()).comments || [];
+      },
+      enabled: openRepliesPostId === postId,
+    });
+    // Update reply count when comments change
+    React.useEffect(() => {
+      if (query.data) {
+        // setReplyCounts((prev) => ({ ...prev, [postId]: query.data!.length }));
+      }
+    }, [query.data, postId]);
+    return query;
+  };
 
   const handleSubmitPost = () => {
     if (!newPostContent.trim()) return
@@ -393,60 +563,121 @@ export default function Community() {
             </div>
           ) : postsData?.posts?.length > 0 ? (
             <AnimatePresence>
-              {postsData.posts.map((post: any, index: number) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover="hover"
-                  whileTap="tap"
-                  variants={cardHoverVariants}
-                >
-                  <Card className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl border-0 rounded-3xl overflow-hidden transition-all duration-300">
-                    <CardContent className="p-6">
-                      <div className="flex items-start space-x-4">
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-md"
-                        >
-                          <span className="text-white text-sm font-bold">{getInitials(post.anonymous, post.id)}</span>
-                        </motion.div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {post.anonymous && (
-                              <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs rounded-full">
-                                Anonymous
-                              </Badge>
+              {postsData.posts.map((post: any, index: number) => {
+                const isOpen = openRepliesPostId === post.id;
+                const replyCount = isOpen ? openPostComments.length : post.replyCount || 0; // fallback to 0 if not available
+                return (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover="hover"
+                    whileTap="tap"
+                    variants={cardHoverVariants}
+                  >
+                    <Card className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl border-0 rounded-3xl overflow-hidden transition-all duration-300">
+                      <CardContent className="p-6">
+                        <div className="flex items-start space-x-4">
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-md"
+                          >
+                            <span className="text-white text-sm font-bold">{getInitials(post.anonymous, post.id)}</span>
+                          </motion.div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              {post.anonymous && (
+                                <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs rounded-full">
+                                  Anonymous
+                                </Badge>
+                              )}
+                              <span className="text-xs text-gray-500 font-medium">{formatTimeAgo(post.createdAt)}</span>
+                            </div>
+                            <p className="text-sm text-gray-700 mb-4 leading-relaxed">{post.content}</p>
+                            <div className="flex items-center space-x-6">
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleLikePost(post.id)}
+                                className="flex items-center space-x-2 text-xs text-gray-500 hover:text-red-500 transition-colors"
+                              >
+                                <Heart className="w-4 h-4" />
+                                <span className="font-medium">{post.likes}</span>
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex items-center space-x-2 text-xs text-gray-500 hover:text-purple-500 transition-colors"
+                                onClick={() => {
+                                  if (isOpen) {
+                                    setOpenRepliesPostId(null);
+                                    setReplyingToPostId(null);
+                                    setReplyContent("");
+                                  } else {
+                                    setOpenRepliesPostId(post.id);
+                                    setReplyingToPostId(post.id);
+                                  }
+                                }}
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                                <span className="font-medium">Reply</span>
+                                <span className="ml-1 text-xs text-gray-400">{replyCount}</span>
+                              </motion.button>
+                            </div>
+                            {replyingToPostId === post.id && (
+                              <div className="mt-4 space-y-2">
+                                <Textarea
+                                  placeholder="Write your reply..."
+                                  value={replyContent}
+                                  onChange={e => setReplyContent(e.target.value)}
+                                  className="min-h-[60px] resize-none border-purple-200 focus:border-purple-400 focus:ring-purple-400 rounded-2xl"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={async () => {
+                                      await createCommentMutation.mutateAsync({ postId: post.id, content: replyContent.trim(), parentCommentId: null });
+                                      refetchOpenPostComments();
+                                    }}
+                                    disabled={!replyContent.trim() || createCommentMutation.isPending}
+                                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-2xl py-2 px-4 font-medium shadow-lg disabled:opacity-50"
+                                  >
+                                    {createCommentMutation.isPending ? "Replying..." : "Reply"}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => { setReplyingToPostId(null); setReplyContent(""); }}
+                                    className="rounded-2xl px-4"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
                             )}
-                            <span className="text-xs text-gray-500 font-medium">{formatTimeAgo(post.createdAt)}</span>
-                          </div>
-                          <p className="text-sm text-gray-700 mb-4 leading-relaxed">{post.content}</p>
-                          <div className="flex items-center space-x-6">
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleLikePost(post.id)}
-                              className="flex items-center space-x-2 text-xs text-gray-500 hover:text-red-500 transition-colors"
-                            >
-                              <Heart className="w-4 h-4" />
-                              <span className="font-medium">{post.likes}</span>
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="flex items-center space-x-2 text-xs text-gray-500 hover:text-purple-500 transition-colors"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              <span className="font-medium">Reply</span>
-                            </motion.button>
+                            {isOpen && openPostComments.length > 0 && (
+                              <div className="mt-4 space-y-3 border-l-2 border-purple-100 pl-4">
+                                {buildCommentTree(openPostComments).map((comment: any) => (
+                                  <CommentNode
+                                    key={comment.id}
+                                    comment={comment}
+                                    level={0}
+                                    onReply={setReplyingToPostId}
+                                    replyingToId={replyingToPostId}
+                                    replyContent={replyContent}
+                                    setReplyContent={setReplyContent}
+                                    createCommentMutation={createCommentMutation}
+                                    refetchComments={refetchOpenPostComments}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           ) : (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">

@@ -388,7 +388,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.id);
       const commentData = insertPostCommentSchema.parse({
         ...req.body,
-        postId
+        postId,
+        parentCommentId: req.body.parentCommentId ?? null,
       });
 
       // Moderate content
