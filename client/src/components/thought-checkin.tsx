@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Brain, ArrowRight, CheckCircle, Lightbulb, Heart } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface ThoughtCheckinProps {
   onComplete?: () => void;
@@ -17,6 +21,34 @@ export default function ThoughtCheckin({ onComplete }: ThoughtCheckinProps) {
     reframe: ""
   });
   const [isAnimating, setIsAnimating] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const interventionMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+      return apiRequest("POST", "/api/interventions", {
+        userId: user.id,
+        type: "cbt",
+        title: "Thought Check-In",
+        content: "Completed a CBT thought check-in.",
+        duration: 5, // 5 minutes
+        completed: true,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thought Check-In Saved!",
+        description: "Your progress has been recorded.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving intervention",
+        description: String(error),
+        variant: "destructive",
+      });
+    },
+  });
 
   const steps = [
     {
@@ -50,6 +82,8 @@ export default function ThoughtCheckin({ onComplete }: ThoughtCheckinProps) {
         setIsAnimating(false);
       }, 300);
     } else {
+      // Save intervention completion
+      if (user) interventionMutation.mutate();
       onComplete?.();
     }
   };
