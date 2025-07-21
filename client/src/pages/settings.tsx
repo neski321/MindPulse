@@ -48,7 +48,7 @@ const itemVariants = {
 export default function Settings() {
   const { toast } = useToast()
   const { user, loading, logout, refreshUser } = useAuth()
-  const { cursorEffects, setCursorEffects } = useSettings()
+  const { cursorEffects, setCursorEffects, magnetEffect, setMagnetEffect } = useSettings()
   const [notifications, setNotifications] = useState(true)
   const [emailUpdates, setEmailUpdates] = useState(true)
   const [privacyMode, setPrivacyMode] = useState(false)
@@ -618,19 +618,19 @@ export default function Settings() {
                   <Sparkles className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <h3 className="font-medium text-foreground">Cursor Effects</h3>
-                    <p className="text-sm text-muted-foreground">Enable fluid cursor animations and effects</p>
+                    <p className="text-sm text-muted-foreground">Enable or disable animated cursor effects</p>
                   </div>
                 </div>
-                <Switch
-                  checked={cursorEffects}
-                  onCheckedChange={(value) => {
-                    setCursorEffects(value)
-                    toast({
-                      title: `Cursor effects ${value ? 'enabled' : 'disabled'}`,
-                      description: `Cursor animations have been ${value ? 'turned on' : 'turned off'}.`,
-                    })
-                  }}
-                />
+                <Switch checked={cursorEffects} onCheckedChange={setCursorEffects} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Magnet Effect</h4>
+                    <p className="text-xs text-gray-500">Enable or disable the magnetic effect on the mood tracker</p>
+                  </div>
+                </div>
+                <Switch checked={magnetEffect} onCheckedChange={setMagnetEffect} />
               </div>
             </CardContent>
           </Card>

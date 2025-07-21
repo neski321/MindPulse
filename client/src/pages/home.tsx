@@ -16,6 +16,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/AuthContext"
 import WelcomeModal from "../components/ui/welcome-modal";
+import Magnet from "@/components/magnet";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -82,6 +84,7 @@ export default function Home() {
   const [showThoughtCheckin, setShowThoughtCheckin] = useState(false)
   const [showQuickMeditation, setShowQuickMeditation] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false);
+  const { magnetEffect } = useSettings();
 
   // Show welcome modal for first-time users
   useEffect(() => {
@@ -289,7 +292,15 @@ export default function Home() {
 
           {/* Mood Tracker */}
           <motion.div variants={itemVariants}>
-            <MoodTracker onMoodSelect={handleMoodSelect} selectedMood={selectedMood} isLoading={moodMutation.isPending} />
+            <div className="relative flex justify-center items-center py-8 sm:py-10" style={{ minHeight: 220 }}>
+              {magnetEffect ? (
+                <Magnet padding={300} disabled={false} magnetStrength={10}>
+                  <MoodTracker onMoodSelect={handleMoodSelect} selectedMood={selectedMood} isLoading={moodMutation.isPending} />
+                </Magnet>
+              ) : (
+                <MoodTracker onMoodSelect={handleMoodSelect} selectedMood={selectedMood} isLoading={moodMutation.isPending} />
+              )}
+            </div>
           </motion.div>
 
           {/* Micro-Interventions */}
