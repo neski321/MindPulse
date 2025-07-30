@@ -12,6 +12,7 @@ import { useAuth } from "@/AuthContext"
 import { useSettings } from "@/contexts/SettingsContext"
 import { getAuth, deleteUser, updateEmail, updateProfile } from "firebase/auth"
 import { CrisisResources } from "@/components/crisis-resources"
+import { PreferencesForm } from "@/components/preferences-form"
 import {
   Dialog,
   DialogContent,
@@ -634,6 +635,11 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Recommendation Preferences */}
+        <motion.div variants={itemVariants}>
+          <PreferencesForm />
         </motion.div>
 
         {/* Support & Help */}
