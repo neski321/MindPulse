@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -53,8 +53,7 @@ export const postComments = pgTable("post_comments", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   content: text("content").notNull(),
   anonymous: boolean("anonymous").default(true),
-  // @ts-expect-error: Self-referencing field is valid in Drizzle
-  parentCommentId: integer("parent_comment_id").references(() => postComments.id, { onDelete: "cascade" }),
+  parentCommentId: integer("parent_comment_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -100,6 +99,60 @@ export const userProgressRelations = relations(userProgress, ({ one }) => ({
   user: one(users, { fields: [userProgress.userId], references: [users.id] }),
 }));
 
+// New tables for recommendations
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  preferredInterventionTypes: jsonb("preferred_intervention_types"), // ["breathing", "meditation", "cbt"]
+  preferredContentTypes: jsonb("preferred_content_types"), // ["articles", "audio", "video"]
+  preferredDuration: integer("preferred_duration"), // minutes
+  preferredTimeOfDay: text("preferred_time_of_day"), // "morning", "afternoon", "evening"
+  notificationPreferences: jsonb("notification_preferences"), // {"mood_reminders": true, "intervention_suggestions": true}
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const recommendations = pgTable("recommendations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: text("type").notNull(), // "content", "activity", "intervention", "community"
+  title: text("title").notNull(),
+  description: text("description"),
+  contentId: text("content_id"), // ID of the recommended content
+  contentType: text("content_type"), // "article", "meditation", "breathing", "community_post"
+  reason: text("reason"), // Why this was recommended
+  priority: integer("priority").default(1), // 1-5 scale
+  shown: boolean("shown").default(false),
+  clicked: boolean("clicked").default(false),
+  dismissed: boolean("dismissed").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const contentMetadata = pgTable("content_metadata", {
+  id: serial("id").primaryKey(),
+  contentId: text("content_id").notNull(),
+  contentType: text("content_type").notNull(), // "article", "meditation", "breathing", "community_post"
+  title: text("title").notNull(),
+  description: text("description"),
+  tags: jsonb("tags"), // ["anxiety", "stress", "sleep", "relationships"]
+  targetMoods: jsonb("target_moods"), // ["anxious", "stressed", "calm"]
+  duration: integer("duration"), // minutes
+  difficulty: text("difficulty"), // "beginner", "intermediate", "advanced"
+  popularity: integer("popularity").default(0),
+  rating: numeric("rating", { precision: 3, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// New relations for recommendations
+export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
+  user: one(users, { fields: [userPreferences.userId], references: [users.id] }),
+}));
+
+export const recommendationsRelations = relations(recommendations, ({ one }) => ({
+  user: one(users, { fields: [recommendations.userId], references: [users.id] }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -136,6 +189,22 @@ export const insertUserProgressSchema = createInsertSchema(userProgress).omit({
   updatedAt: true,
 });
 
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRecommendationSchema = createInsertSchema(recommendations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertContentMetadataSchema = createInsertSchema(contentMetadata).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -149,3 +218,9 @@ export type PostComment = typeof postComments.$inferSelect;
 export type InsertPostComment = z.infer<typeof insertPostCommentSchema>;
 export type UserProgress = typeof userProgress.$inferSelect;
 export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
+export type Recommendation = typeof recommendations.$inferSelect;
+export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
+export type ContentMetadata = typeof contentMetadata.$inferSelect;
+export type InsertContentMetadata = z.infer<typeof insertContentMetadataSchema>;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,6 +18,7 @@ import { useAuth } from "@/AuthContext"
 import WelcomeModal from "../components/ui/welcome-modal";
 import Magnet from "@/components/magnet";
 import { useSettings } from "@/contexts/SettingsContext";
+import { RecommendationsCard } from "@/components/recommendations-card";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -85,6 +86,7 @@ export default function Home() {
   const [showQuickMeditation, setShowQuickMeditation] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false);
   const { magnetEffect } = useSettings();
+  const moodTrackerRef = useRef<HTMLDivElement>(null);
 
   // Show welcome modal for first-time users
   useEffect(() => {
@@ -92,6 +94,39 @@ export default function Home() {
     if (!hasSeenWelcome) {
       setShowWelcome(true);
     }
+  }, []);
+
+  // Listen for recommendation events
+  useEffect(() => {
+    const handleBreathingExercise = (event: CustomEvent) => {
+      console.log('Triggering breathing exercise:', event.detail);
+      setShowBreathingExercise(true);
+    };
+
+    const handleMeditation = (event: CustomEvent) => {
+      console.log('Triggering meditation:', event.detail);
+      setShowQuickMeditation(true);
+    };
+
+    const handleMoodTracker = () => {
+      console.log('Triggering mood tracker');
+      // Scroll to mood tracker
+      if (moodTrackerRef.current) {
+        moodTrackerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('trigger-breathing-exercise', handleBreathingExercise as EventListener);
+    window.addEventListener('trigger-meditation', handleMeditation as EventListener);
+    window.addEventListener('trigger-mood-tracker', handleMoodTracker);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('trigger-breathing-exercise', handleBreathingExercise as EventListener);
+      window.removeEventListener('trigger-meditation', handleMeditation as EventListener);
+      window.removeEventListener('trigger-mood-tracker', handleMoodTracker);
+    };
   }, []);
 
   const handleCloseWelcome = () => {
@@ -291,7 +326,7 @@ export default function Home() {
           </motion.section>
 
           {/* Mood Tracker */}
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} ref={moodTrackerRef}>
             <div className="relative flex justify-center items-center py-8 sm:py-10" style={{ minHeight: 220 }}>
               {magnetEffect ? (
                 <Magnet padding={300} disabled={false} magnetStrength={10}>
@@ -341,6 +376,11 @@ export default function Home() {
               </motion.div>
             </div>
           </motion.section>
+
+          {/* Recommendations Section */}
+          <motion.div variants={itemVariants}>
+            <RecommendationsCard />
+          </motion.div>
 
           {/* Progress Section */}
           <motion.div variants={itemVariants}>

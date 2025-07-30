@@ -14,6 +14,7 @@ import {
   analyzeMoodPattern,
   moderateContent 
 } from "./services/gemini";
+import { recommendationEngine } from "./services/recommendations";
 
 // Helper function for error handling
 function handleError(error: unknown): string {
@@ -446,6 +447,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       
       res.json({ resources });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  // Recommendation routes
+  app.get("/api/recommendations/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const recommendations = await recommendationEngine.generateRecommendations(userId);
+      res.json({ recommendations });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.post("/api/recommendations/:userId/preferences", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const preferences = req.body;
+      await recommendationEngine.updateUserPreferences(userId, preferences);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.post("/api/recommendations/:id/interaction", async (req, res) => {
+    try {
+      const recommendationId = req.params.id;
+      const { action } = req.body; // 'clicked' or 'dismissed'
+      
+      if (!['clicked', 'dismissed'].includes(action)) {
+        return res.status(400).json({ error: "Invalid action" });
+      }
+      
+      // Handle both numeric IDs (from database) and string IDs (fallback)
+      const parsedId = isNaN(parseInt(recommendationId)) ? recommendationId : parseInt(recommendationId);
+      
+      await recommendationEngine.trackRecommendationInteraction(parsedId, action);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: handleError(error) });
     }
