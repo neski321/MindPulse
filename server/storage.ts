@@ -43,7 +43,7 @@ export interface IStorage {
 
   // Community operations
   createCommunityPost(post: InsertCommunityPost): Promise<CommunityPost>;
-  getCommunityPosts(limit?: number): Promise<CommunityPost[]>;
+  getCommunityPosts(limit?: number): Promise<(CommunityPost & { replyCount: number })[]>;
   likePost(postId: number): Promise<void>;
   createPostComment(comment: InsertPostComment): Promise<PostComment>;
   getPostComments(postId: number): Promise<PostComment[]>;
@@ -156,12 +156,27 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getCommunityPosts(limit: number = 10): Promise<CommunityPost[]> {
-    return await db.select()
+  async getCommunityPosts(limit: number = 10): Promise<(CommunityPost & { replyCount: number })[]> {
+    const posts = await db.select({
+      id: communityPosts.id,
+      userId: communityPosts.userId,
+      content: communityPosts.content,
+      anonymous: communityPosts.anonymous,
+      likes: communityPosts.likes,
+      flagged: communityPosts.flagged,
+      createdAt: communityPosts.createdAt,
+      replyCount: sql<number>`(
+        SELECT COUNT(*)::int 
+        FROM ${postComments} 
+        WHERE ${postComments.postId} = ${communityPosts.id}
+      )`
+    })
       .from(communityPosts)
       .where(eq(communityPosts.flagged, false))
       .orderBy(desc(communityPosts.createdAt))
       .limit(limit);
+    
+    return posts;
   }
 
   async likePost(postId: number): Promise<void> {

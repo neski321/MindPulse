@@ -790,7 +790,7 @@ export default function Home() {
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.9, opacity: 0, y: 20 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+                  className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
                 >
                   <div className="p-6 border-b border-gray-100">
                     <div className="flex items-center justify-between">
@@ -826,7 +826,7 @@ export default function Home() {
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.9, opacity: 0, y: 20 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+                  className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
                 >
                   <div className="p-6 border-b border-gray-100">
                     <div className="flex items-center justify-between">
