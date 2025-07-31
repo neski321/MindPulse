@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Smile, Wind, Users, Phone, TriangleAlert, Brain, Flower2, Sparkles } from "lucide-react"
+import { Heart, Smile, Wind, Users, Phone, TriangleAlert, Brain, Flower2, Sparkles, Plus } from "lucide-react"
 import { useLocation } from "wouter"
 import { MoodTracker } from "@/components/mood-tracker"
 import { BreathingExercise } from "@/components/breathing-exercise"
@@ -19,6 +19,7 @@ import WelcomeModal from "../components/ui/welcome-modal";
 import Magnet from "@/components/magnet";
 import { useSettings } from "@/contexts/SettingsContext";
 import { RecommendationsCard } from "@/components/recommendations-card";
+import { WellnessToolsModal } from "@/components/ui/wellness-tools-modal";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -85,6 +86,7 @@ export default function Home() {
   const [showThoughtCheckin, setShowThoughtCheckin] = useState(false)
   const [showQuickMeditation, setShowQuickMeditation] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showWellnessTools, setShowWellnessTools] = useState(false);
   const { magnetEffect } = useSettings();
   const moodTrackerRef = useRef<HTMLDivElement>(null);
 
@@ -190,7 +192,7 @@ export default function Home() {
 
   // Mood tracking mutation
   const moodMutation = useMutation({
-    mutationFn: async (moodData: { mood: string; intensity: number; note?: string }) => {
+    mutationFn: async (moodData: { mood: string; intensity: number; secondaryMood?: string; note?: string }) => {
       if (!user) throw new Error("No user")
       const response = await apiRequest("POST", "/api/mood-entries", {
         userId: user.id,
@@ -217,9 +219,9 @@ export default function Home() {
     },
   })
 
-  const handleMoodSelect = (mood: string, intensity: number) => {
+  const handleMoodSelect = (mood: string, intensity: number, secondaryMood?: string) => {
     setSelectedMood(mood)
-    moodMutation.mutate({ mood, intensity })
+    moodMutation.mutate({ mood, intensity, secondaryMood })
   }
 
   if (loading) {
@@ -375,6 +377,38 @@ export default function Home() {
                 />
               </motion.div>
             </div>
+
+            {/* Looking for More Button */}
+            <motion.div 
+              variants={itemVariants}
+              className="pt-4"
+            >
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full"
+              >
+                <Button
+                  variant="outline"
+                  className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 rounded-2xl py-6 text-gray-600 hover:text-blue-600 font-medium"
+                  onClick={() => setShowWellnessTools(true)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <motion.div
+                      whileHover={{ rotate: 90 }}
+                      transition={{ duration: 0.3 }}
+                      className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center shadow-md"
+                    >
+                      <Plus className="w-4 h-4 text-white" />
+                    </motion.div>
+                    <div className="text-left">
+                      <p className="font-semibold">Looking for More?</p>
+                      <p className="text-xs text-gray-500">Discover 10+ additional wellness tools</p>
+                    </div>
+                  </div>
+                </Button>
+              </motion.div>
+            </motion.div>
           </motion.section>
 
           {/* Recommendations Section */}
@@ -725,6 +759,12 @@ export default function Home() {
                 </motion.div>
               </motion.div>
             )}
+
+            {/* Wellness Tools Modal */}
+            <WellnessToolsModal 
+              isOpen={showWellnessTools} 
+              onClose={() => setShowWellnessTools(false)} 
+            />
           </AnimatePresence>
         </motion.div>
       </div>

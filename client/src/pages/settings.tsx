@@ -13,6 +13,8 @@ import { useSettings } from "@/contexts/SettingsContext"
 import { getAuth, deleteUser, updateEmail, updateProfile } from "firebase/auth"
 import { CrisisResources } from "@/components/crisis-resources"
 import { PreferencesForm } from "@/components/preferences-form"
+import { HelpCenter } from "@/components/help-center"
+import { ContactSupport } from "@/components/contact-support"
 import {
   Dialog,
   DialogContent,
@@ -55,6 +57,8 @@ export default function Settings() {
   const [privacyMode, setPrivacyMode] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [showCrisisResources, setShowCrisisResources] = useState(false)
+  const [showHelpCenter, setShowHelpCenter] = useState(false)
+  const [showContactSupport, setShowContactSupport] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
@@ -301,24 +305,14 @@ export default function Settings() {
       description: "Find answers to common questions",
       icon: <HelpCircle className="w-5 h-5 text-blue-500" />,
       color: "from-blue-50 to-cyan-50",
-      onClick: () => {
-        toast({
-          title: "Help Center",
-          description: "Help center coming soon!",
-        })
-      },
+      onClick: () => setShowHelpCenter(true),
     },
     {
       title: "Contact Support",
       description: "Get help from our support team",
       icon: <Mail className="w-5 h-5 text-green-500" />,
       color: "from-green-50 to-emerald-50",
-      onClick: () => {
-        toast({
-          title: "Contact Support",
-          description: "Contact support coming soon!",
-        })
-      },
+      onClick: () => setShowContactSupport(true),
     },
     {
       title: "Crisis Resources",
@@ -765,6 +759,16 @@ export default function Settings() {
         {/* Crisis Resources Modal */}
         {showCrisisResources && (
           <CrisisResources onClose={() => setShowCrisisResources(false)} />
+        )}
+
+        {/* Help Center Modal */}
+        {showHelpCenter && (
+          <HelpCenter onClose={() => setShowHelpCenter(false)} />
+        )}
+
+        {/* Contact Support Modal */}
+        {showContactSupport && (
+          <ContactSupport onClose={() => setShowContactSupport(false)} />
         )}
 
         {/* Delete Account Confirmation Dialog */}

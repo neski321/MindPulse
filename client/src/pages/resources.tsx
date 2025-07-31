@@ -95,7 +95,7 @@ export default function Resources() {
           description: "Start your day with mindfulness and intention",
           readTime: "10 min",
           tags: ["Morning", "Mindfulness"],
-          url: "https://www.headspace.com/meditation/10-minute-meditation",
+          url: "https://www.youtube.com/watch?v=inpok4MKVLM",
           rating: 4.9,
         },
         {
@@ -103,7 +103,7 @@ export default function Resources() {
           description: "Relax your body and mind before bedtime",
           readTime: "15 min",
           tags: ["Sleep", "Relaxation"],
-          url: "https://www.calm.com/sleep/body-scan",
+          url: "https://www.youtube.com/watch?v=86m4rc_ADcM",
           rating: 4.8,
         },
         {
@@ -128,7 +128,7 @@ export default function Resources() {
           description: "CBT tool for examining and reframing thoughts",
           readTime: "Interactive",
           tags: ["CBT", "Worksheet"],
-          url: "https://www.psychologytools.com/resource/thought-record-sheet/",
+          url: "https://www.verywellmind.com/thought-record-4691830",
           rating: 4.7,
         },
         {
@@ -136,7 +136,7 @@ export default function Resources() {
           description: "Daily prompts for practicing gratitude",
           readTime: "5 min daily",
           tags: ["Gratitude", "Journal"],
-          url: "https://www.happier.com/blog/gratitude-journal-template",
+          url: "https://www.verywellmind.com/gratitude-journal-4691830",
           rating: 4.8,
         },
         {
@@ -161,7 +161,7 @@ export default function Resources() {
           description: "Understanding panic attacks and coping strategies",
           readTime: "12 min",
           tags: ["Panic", "Education"],
-          url: "https://www.ted.com/talks/dr_jennifer_akullian_what_happens_during_a_panic_attack",
+          url: "https://www.youtube.com/watch?v=HnJ1bqXUnIM",
           rating: 4.9,
         },
         {
@@ -169,7 +169,7 @@ export default function Resources() {
           description: "How physical and mental health are interconnected",
           readTime: "8 min",
           tags: ["Mind-Body", "Health"],
-          url: "https://www.harvard.edu/mind-body-medicine",
+          url: "https://www.youtube.com/watch?v=0zrM6JqbQYE",
           rating: 4.8,
         },
         {
@@ -177,7 +177,7 @@ export default function Resources() {
           description: "Tips for improving sleep quality and mental health",
           readTime: "10 min",
           tags: ["Sleep", "Habits"],
-          url: "https://www.sleepfoundation.org/how-sleep-works/why-do-we-need-sleep",
+          url: "https://www.youtube.com/watch?v=nm1TxQj9IsQ",
           rating: 4.7,
         },
       ],
