@@ -18,7 +18,8 @@ export const users = pgTable("users", {
 export const moodEntries = pgTable("mood_entries", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  mood: text("mood").notNull(), // joy, calm, neutral, stressed, anxious
+  mood: text("mood").notNull(), // primary emotion: joy, calm, neutral, stressed, anxious
+  secondaryMood: text("secondary_mood"), // optional secondary emotion
   intensity: integer("intensity").notNull(), // 1-5 scale
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow(),

@@ -1,7 +1,7 @@
 import { db } from "../db";
 import { users, moodEntries, interventions, userPreferences, recommendations as recommendationsTable, contentMetadata, communityPosts } from "../../shared/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
-import { generatePersonalizedIntervention } from "./openai";
+import { generatePersonalizedIntervention, generateCrisisIntervention } from "./gemini";
 import { Recommendation } from "../../shared/schema";
 
 export interface RecommendationEngine {
@@ -177,6 +177,7 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
     
     // Get current mood or most recent mood
     const currentMood = userData.recentMoods[0]?.mood || moodPatterns.mostFrequentMood;
+    const currentSecondaryMood = userData.recentMoods[0]?.secondaryMood;
     const currentIntensity = userData.recentMoods[0]?.intensity || moodPatterns.averageIntensity;
     
     // Morning recommendations (6-11 AM)
@@ -290,6 +291,74 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
         priority: 4,
         contentId: 'stress-release-4min'
       });
+    }
+
+    // Enhanced recommendations using secondary mood data
+    if (currentSecondaryMood) {
+      // Crisis prevention for overwhelmed users
+      if (currentMood === 'stressed' && currentSecondaryMood === 'overwhelmed') {
+        recommendations.push({
+          type: 'intervention',
+          title: 'Crisis Safety Planning',
+          description: 'Create a personalized safety plan for overwhelming moments',
+          contentType: 'cbt',
+          reason: 'Feeling overwhelmed can be challenging. A safety plan can help you navigate difficult moments.',
+          priority: 5,
+          contentId: 'crisis-safety-planning'
+        });
+      }
+
+      // Immediate grounding for panicked users
+      if (currentMood === 'anxious' && currentSecondaryMood === 'panicked') {
+        recommendations.push({
+          type: 'intervention',
+          title: 'Immediate Grounding',
+          description: 'Quick grounding techniques for acute anxiety',
+          contentType: 'grounding',
+          reason: 'When feeling panicked, grounding techniques can help you find your center quickly.',
+          priority: 5,
+          contentId: 'immediate-grounding-2min'
+        });
+      }
+
+      // Gratitude practice for grateful users
+      if (currentMood === 'joy' && currentSecondaryMood === 'grateful') {
+        recommendations.push({
+          type: 'activity',
+          title: 'Gratitude Journal',
+          description: 'Build on your grateful feeling with a gratitude practice',
+          contentType: 'activity',
+          reason: 'Your gratitude is beautiful! This practice can amplify your positive feelings.',
+          priority: 4,
+          contentId: 'gratitude-journal'
+        });
+      }
+
+      // Energy channeling for energetic users
+      if (currentMood === 'joy' && currentSecondaryMood === 'energetic') {
+        recommendations.push({
+          type: 'activity',
+          title: 'Channel Your Energy',
+          description: 'Use your positive energy for a productive activity',
+          contentType: 'activity',
+          reason: 'Great energy! Channel it into something meaningful.',
+          priority: 4,
+          contentId: 'energy-channeling'
+        });
+      }
+
+      // Sleep support for tired users
+      if (currentMood === 'neutral' && currentSecondaryMood === 'tired') {
+        recommendations.push({
+          type: 'intervention',
+          title: 'Gentle Sleep Prep',
+          description: 'A calming routine to help you rest',
+          contentType: 'meditation',
+          reason: 'Rest is important. This gentle practice can help you prepare for sleep.',
+          priority: 4,
+          contentId: 'sleep-prep-5min'
+        });
+      }
     }
     
     return recommendations;

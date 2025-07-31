@@ -26,18 +26,25 @@ export async function generatePersonalizedIntervention(
   mood: string,
   intensity: number,
   recentMoods: string[],
-  userName: string
+  userName: string,
+  secondaryMood?: string
 ): Promise<PersonalizedIntervention> {
   try {
-    const prompt = `You are a compassionate mental health AI assistant. Create a personalized micro-intervention for ${userName} who is currently feeling ${mood} at intensity ${intensity}/5. 
+    const moodDescription = secondaryMood 
+      ? `${mood} and ${secondaryMood}` 
+      : mood;
+    
+    const prompt = `You are a compassionate mental health AI assistant. Create a personalized micro-intervention for ${userName} who is currently feeling ${moodDescription} at intensity ${intensity}/5. 
 
 Recent mood patterns: ${recentMoods.join(', ')}
 
 Create a 2-5 minute intervention that is:
 - Evidence-based (CBT, mindfulness, or breathing techniques)
-- Appropriate for the current mood and intensity
+- Appropriate for the current mood combination and intensity
 - Practical and immediately actionable
 - Supportive and non-judgmental
+
+${secondaryMood ? `Note: The user is feeling both ${mood} and ${secondaryMood}. Consider how these emotions interact and create an intervention that addresses both aspects.` : ''}
 
 Respond with JSON in this format:
 {
@@ -94,16 +101,23 @@ Respond with JSON in this format:
 export async function generateCBTPrompt(
   mood: string,
   intensity: number,
-  userName: string
+  userName: string,
+  secondaryMood?: string
 ): Promise<CBTPrompt> {
   try {
-    const prompt = `Create a gentle CBT-inspired thought examination prompt for ${userName} who is feeling ${mood} at intensity ${intensity}/5.
+    const moodDescription = secondaryMood 
+      ? `${mood} and ${secondaryMood}` 
+      : mood;
+    
+    const prompt = `Create a gentle CBT-inspired thought examination prompt for ${userName} who is feeling ${moodDescription} at intensity ${intensity}/5.
 
 The prompt should:
 - Help identify negative thought patterns
 - Provide gentle questioning to examine thoughts
 - Offer reframing techniques
 - Be supportive and non-judgmental
+
+${secondaryMood ? `Consider how the combination of ${mood} and ${secondaryMood} might affect thought patterns and create a prompt that addresses both emotional aspects.` : ''}
 
 Respond with JSON in this format:
 {
@@ -146,11 +160,12 @@ Respond with JSON in this format:
 }
 
 export async function analyzeMoodPattern(
-  moodHistory: Array<{ mood: string; intensity: number; date: Date }>
+  moodHistory: Array<{ mood: string; intensity: number; date: Date; secondaryMood?: string }>
 ): Promise<MoodInsight> {
   try {
     const moodData = moodHistory.map(entry => ({
       mood: entry.mood,
+      secondaryMood: entry.secondaryMood,
       intensity: entry.intensity,
       dayOfWeek: entry.date.getDay(),
       timeOfDay: entry.date.getHours()
@@ -160,10 +175,11 @@ export async function analyzeMoodPattern(
 ${JSON.stringify(moodData)}
 
 Look for:
-- Patterns in mood changes
+- Patterns in mood changes and combinations
 - Time-based trends
 - Intensity variations
-- Actionable recommendations
+- Secondary emotion patterns
+- Actionable recommendations based on emotional complexity
 
 Respond with JSON in this format:
 {
@@ -201,6 +217,79 @@ Respond with JSON in this format:
       pattern: "Building your mood history to identify patterns",
       recommendation: "Keep tracking your daily moods to gain insights over time",
       confidence: 0.5
+    };
+  }
+}
+
+export async function generateCrisisIntervention(
+  mood: string,
+  intensity: number,
+  secondaryMood?: string
+): Promise<PersonalizedIntervention> {
+  try {
+    const moodDescription = secondaryMood 
+      ? `${mood} and ${secondaryMood}` 
+      : mood;
+    
+    const prompt = `Create an immediate crisis intervention for someone feeling ${moodDescription} at intensity ${intensity}/5.
+
+This should be:
+- Immediately actionable (1-3 minutes)
+- Grounding and calming
+- Safe and evidence-based
+- Designed for acute distress
+
+${secondaryMood === 'overwhelmed' || secondaryMood === 'panicked' ? 'This person is in acute distress and needs immediate grounding techniques.' : ''}
+
+Respond with JSON in this format:
+{
+  "type": "grounding|breathing|cbt",
+  "title": "Brief descriptive title",
+  "content": "Full intervention content with gentle guidance",
+  "duration": number_in_minutes,
+  "instructions": ["step 1", "step 2", "step 3"]
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: prompt,
+      config: {
+        temperature: 0.5,
+        responseMimeType: "application/json",
+        systemInstruction: "You are a crisis intervention AI that provides immediate, safe, and effective interventions for acute mental health distress."
+      },
+    });
+
+    const text = response.text;
+    
+    if (!text) {
+      throw new Error("No response from Gemini");
+    }
+
+    const parsedResult = JSON.parse(text);
+    
+    return {
+      type: parsedResult.type || "grounding",
+      title: parsedResult.title || "Immediate Grounding",
+      content: parsedResult.content || "Let's help you find your center right now.",
+      duration: parsedResult.duration || 2,
+      instructions: parsedResult.instructions || ["Find a comfortable position", "Take slow breaths", "Focus on the present moment"]
+    };
+  } catch (error) {
+    console.error("Error generating crisis intervention:", error);
+    // Return a safe default crisis intervention
+    return {
+      type: "grounding",
+      title: "5-4-3-2-1 Grounding",
+      content: "Let's use the 5-4-3-2-1 grounding technique to help you feel more present and safe.",
+      duration: 2,
+      instructions: [
+        "Name 5 things you can see",
+        "Name 4 things you can touch",
+        "Name 3 things you can hear",
+        "Name 2 things you can smell",
+        "Name 1 thing you can taste"
+      ]
     };
   }
 }
