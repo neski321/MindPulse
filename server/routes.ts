@@ -15,6 +15,7 @@ import {
   moderateContent 
 } from "./services/gemini";
 import { recommendationEngine } from "./services/recommendations";
+import { emailService } from "./services/email";
 
 // Helper function for error handling
 function handleError(error: unknown): string {
@@ -488,6 +489,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await recommendationEngine.trackRecommendationInteraction(parsedId, action);
       res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  // Contact support routes
+  app.post("/api/contact-support", async (req, res) => {
+    try {
+      const { name, email, subject, message, priority, userId } = req.body;
+      
+      if (!name || !email || !subject || !message || !priority) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const contactMessage = await storage.createContactSupportMessage({
+        name,
+        email,
+        subject,
+        message,
+        priority,
+        userId: userId ? parseInt(userId) : null,
+      });
+
+      res.json({ message: contactMessage });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  // Admin routes for contact message management
+  app.get("/api/admin/contact-messages", async (req, res) => {
+    try {
+      const messages = await storage.getAllContactMessages();
+      res.json({ messages });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.get("/api/admin/contact-messages/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const message = await storage.getContactMessageById(id);
+      
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      res.json({ message });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.patch("/api/admin/contact-messages/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!['pending', 'in_progress', 'resolved', 'closed'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      
+      const message = await storage.updateContactMessageStatus(id, status);
+      res.json({ message });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.delete("/api/admin/contact-messages/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteContactMessage(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.post("/api/admin/contact-messages/:id/reply", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { replyMessage } = req.body;
+      
+      if (!replyMessage) {
+        return res.status(400).json({ error: "Reply message is required" });
+      }
+      
+      const message = await storage.getContactMessageById(id);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      // Send email reply
+      const emailSent = await emailService.sendReplyEmail({
+        to: message.email,
+        fromName: message.name,
+        originalSubject: message.subject,
+        originalMessage: message.message,
+        replyMessage: replyMessage.trim(),
+      });
+      
+      // Update message status to resolved
+      const updatedMessage = await storage.updateContactMessageStatus(id, "resolved");
+      
+      res.json({ 
+        message: updatedMessage,
+        emailSent,
+        note: emailSent ? "Reply sent successfully" : "Failed to send email, but status updated"
+      });
     } catch (error) {
       res.status(500).json({ error: handleError(error) });
     }

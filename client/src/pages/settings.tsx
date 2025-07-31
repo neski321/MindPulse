@@ -768,7 +768,13 @@ export default function Settings() {
 
         {/* Contact Support Modal */}
         {showContactSupport && (
-          <ContactSupport onClose={() => setShowContactSupport(false)} />
+          <ContactSupport 
+            onClose={() => setShowContactSupport(false)}
+            initialData={{
+              name: user?.name || "",
+              email: user?.email || "",
+            }}
+          />
         )}
 
         {/* Delete Account Confirmation Dialog */}

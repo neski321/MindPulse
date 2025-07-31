@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,17 @@ import {
   Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/AuthContext";
 
 interface ContactSupportProps {
   onClose: () => void;
+  initialData?: {
+    name?: string;
+    email?: string;
+    subject?: string;
+    message?: string;
+    priority?: string;
+  };
 }
 
 interface ContactMethod {
@@ -38,18 +46,26 @@ interface ContactMethod {
   external?: boolean;
 }
 
-export function ContactSupport({ onClose }: ContactSupportProps) {
+export function ContactSupport({ onClose, initialData }: ContactSupportProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-    priority: "normal"
+    name: initialData?.name || "",
+    email: initialData?.email || "",
+    subject: initialData?.subject || "",
+    message: initialData?.message || "",
+    priority: initialData?.priority || "normal"
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Auto-select email method if initial data is provided
+  React.useEffect(() => {
+    if (initialData) {
+      setSelectedMethod("email");
+    }
+  }, [initialData]);
 
   const contactMethods: ContactMethod[] = [
     {
@@ -114,16 +130,45 @@ export function ContactSupport({ onClose }: ContactSupportProps) {
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    
-    toast({
-      title: "Message Sent!",
-      description: "We'll get back to you within 24 hours.",
-    });
+    try {
+      // Save to database
+      const response = await fetch("/api/contact-support", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          subject: formData.subject.trim(),
+          message: formData.message.trim(),
+          priority: formData.priority,
+          userId: user?.id || null,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      
+      toast({
+        title: "Message Sent!",
+        description: "We'll get back to you within 24 hours.",
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setIsSubmitting(false);
+      
+      toast({
+        title: "Error Sending Message",
+        description: "Please try again or contact us through other means.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {

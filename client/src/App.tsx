@@ -11,6 +11,7 @@ import Progress from "@/pages/progress";
 import Resources from "@/pages/resources";
 import Community from "@/pages/community";
 import Settings from "@/pages/settings";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { SettingsProvider, useSettings } from "./contexts/SettingsContext";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/resources" component={Resources} />
       <Route path="/community" component={Community} />
       <Route path="/settings" component={Settings} />
+      <Route path="/admin-neski" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );

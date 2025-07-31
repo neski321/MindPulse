@@ -145,6 +145,19 @@ export const contentMetadata = pgTable("content_metadata", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const contactSupportMessages = pgTable("contact_support_messages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  priority: text("priority").notNull(), // "low", "normal", "high", "urgent"
+  status: text("status").default("pending"), // "pending", "in_progress", "resolved", "closed"
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // New relations for recommendations
 export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
   user: one(users, { fields: [userPreferences.userId], references: [users.id] }),
@@ -206,6 +219,12 @@ export const insertContentMetadataSchema = createInsertSchema(contentMetadata).o
   createdAt: true,
 });
 
+export const insertContactSupportMessageSchema = createInsertSchema(contactSupportMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -225,3 +244,5 @@ export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 export type ContentMetadata = typeof contentMetadata.$inferSelect;
 export type InsertContentMetadata = z.infer<typeof insertContentMetadataSchema>;
+export type ContactSupportMessage = typeof contactSupportMessages.$inferSelect;
+export type InsertContactSupportMessage = z.infer<typeof insertContactSupportMessageSchema>;
