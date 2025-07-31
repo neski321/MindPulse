@@ -131,7 +131,7 @@ export function HelpCenter({ onClose }: HelpCenterProps) {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+                    className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -165,7 +165,7 @@ export function HelpCenter({ onClose }: HelpCenterProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                      <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
           {/* Search */}
           <div className="mb-6">
             <div className="relative">

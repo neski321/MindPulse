@@ -15,6 +15,8 @@ import { CrisisResources } from "@/components/crisis-resources"
 import { PreferencesForm } from "@/components/preferences-form"
 import { HelpCenter } from "@/components/help-center"
 import { ContactSupport } from "@/components/contact-support"
+import { PrivacyPolicy } from "@/components/ui/privacy-policy"
+import { TermsConditions } from "@/components/ui/terms-conditions"
 import {
   Dialog,
   DialogContent,
@@ -59,6 +61,8 @@ export default function Settings() {
   const [showCrisisResources, setShowCrisisResources] = useState(false)
   const [showHelpCenter, setShowHelpCenter] = useState(false)
   const [showContactSupport, setShowContactSupport] = useState(false)
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
+  const [showTermsConditions, setShowTermsConditions] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
@@ -738,6 +742,7 @@ export default function Settings() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="hover:text-purple-600 transition-colors font-medium"
+                      onClick={() => setShowPrivacyPolicy(true)}
                     >
                       Privacy Policy
                     </motion.button>
@@ -745,6 +750,7 @@ export default function Settings() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="hover:text-purple-600 transition-colors font-medium"
+                      onClick={() => setShowTermsConditions(true)}
                     >
                       Terms of Service
                     </motion.button>
@@ -769,11 +775,17 @@ export default function Settings() {
         {showContactSupport && (
           <ContactSupport 
             onClose={() => setShowContactSupport(false)}
-            initialData={{
-              name: user?.name || "",
-              email: user?.email || "",
-            }}
           />
+        )}
+
+        {/* Privacy Policy Modal */}
+        {showPrivacyPolicy && (
+          <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />
+        )}
+
+        {/* Terms & Conditions Modal */}
+        {showTermsConditions && (
+          <TermsConditions onClose={() => setShowTermsConditions(false)} />
         )}
 
         {/* Delete Account Confirmation Dialog */}

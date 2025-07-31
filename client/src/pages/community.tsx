@@ -77,7 +77,7 @@ function buildCommentTree(comments: any[]) {
 }
 
 // Recursive comment renderer
-function CommentNode({ comment, level, onReply, replyingToId, replyContent, setReplyContent, createCommentMutation, refetchComments }: any) {
+function CommentNode({ comment, level, onReply, replyingToCommentId, replyContent, setReplyContent, createCommentMutation, refetchComments }: any) {
   // Explicitly type onReply
   const handleReply = (id: number | null) => onReply(id);
   const formatTimeAgo = (dateString: string) => {
@@ -106,7 +106,7 @@ function CommentNode({ comment, level, onReply, replyingToId, replyContent, setR
             Reply
           </Button>
         </div>
-        {replyingToId === comment.id && (
+        {replyingToCommentId === comment.id && (
           <div className="mt-2 space-y-2">
             <Textarea
               placeholder="Write your reply..."
@@ -148,7 +148,7 @@ function CommentNode({ comment, level, onReply, replyingToId, replyContent, setR
               comment={child}
               level={level + 1}
               onReply={handleReply}
-              replyingToId={replyingToId}
+              replyingToCommentId={replyingToCommentId}
               replyContent={replyContent}
               setReplyContent={setReplyContent}
               createCommentMutation={createCommentMutation}
@@ -168,6 +168,7 @@ export default function Community() {
   const [isAnonymous, setIsAnonymous] = useState(true)
   const [showPostForm, setShowPostForm] = useState(false)
   const [replyingToPostId, setReplyingToPostId] = useState<number | null>(null);
+  const [replyingToCommentId, setReplyingToCommentId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const queryClient = useQueryClient();
   const [openRepliesPostId, setOpenRepliesPostId] = useState<number | null>(null);
@@ -564,7 +565,7 @@ export default function Community() {
             <AnimatePresence>
               {postsData.posts.map((post: any, index: number) => {
                 const isOpen = openRepliesPostId === post.id;
-                const replyCount = isOpen ? openPostComments.length : post.replyCount || 0; // fallback to 0 if not available
+                const replyCount = post.replyCount || 0; // Always use the reply count from the server
                 return (
                   <motion.div
                     key={post.id}
@@ -612,6 +613,7 @@ export default function Community() {
                                   if (isOpen) {
                                     setOpenRepliesPostId(null);
                                     setReplyingToPostId(null);
+                                    setReplyingToCommentId(null);
                                     setReplyContent("");
                                   } else {
                                     setOpenRepliesPostId(post.id);
@@ -621,7 +623,9 @@ export default function Community() {
                               >
                                 <MessageCircle className="w-4 h-4" />
                                 <span className="font-medium">Reply</span>
-                                <span className="ml-1 text-xs text-gray-400">{replyCount}</span>
+                                {replyCount > 0 && (
+                                  <span className="ml-1 text-xs text-gray-400">({replyCount})</span>
+                                )}
                               </motion.button>
                             </div>
                             {replyingToPostId === post.id && (
@@ -645,7 +649,7 @@ export default function Community() {
                                   </Button>
                                   <Button
                                     variant="outline"
-                                    onClick={() => { setReplyingToPostId(null); setReplyContent(""); }}
+                                    onClick={() => { setReplyingToPostId(null); setReplyingToCommentId(null); setReplyContent(""); }}
                                     className="rounded-2xl px-4"
                                   >
                                     Cancel
@@ -660,8 +664,8 @@ export default function Community() {
                                     key={comment.id}
                                     comment={comment}
                                     level={0}
-                                    onReply={setReplyingToPostId}
-                                    replyingToId={replyingToPostId}
+                                    onReply={setReplyingToCommentId}
+                                    replyingToCommentId={replyingToCommentId}
                                     replyContent={replyContent}
                                     setReplyContent={setReplyContent}
                                     createCommentMutation={createCommentMutation}
