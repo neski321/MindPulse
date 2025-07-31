@@ -346,7 +346,15 @@ export default function Home() {
           <motion.section variants={itemVariants} className="text-center space-y-6">
             <motion.div
               variants={pulseVariants}
-              animate="pulse"
+              animate={{
+                ...pulseVariants.pulse,
+                x: showProfilePopup ? -50 : 0,
+                transition: {
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20,
+                }
+              }}
               className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-full flex items-center justify-center mb-6 shadow-2xl"
             >
               <Smile className="w-10 h-10 text-white" />
