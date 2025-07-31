@@ -146,6 +146,21 @@ export default function Home() {
     }
   };
 
+  // Show guest data warning whenever user becomes a guest
+  useEffect(() => {
+    if (user?.isGuest && !showWelcome) {
+      // Check if we've already shown the warning for this session
+      const hasShownGuestWarning = sessionStorage.getItem("hasShownGuestWarning");
+      if (!hasShownGuestWarning) {
+        setShowGuestDataWarning(true);
+        sessionStorage.setItem("hasShownGuestWarning", "true");
+      }
+    } else if (!user?.isGuest || !user) {
+      // Clear the warning flag when user is not a guest or when logged out
+      sessionStorage.removeItem("hasShownGuestWarning");
+    }
+  }, [user?.isGuest, showWelcome]);
+
   const handleCloseGuestDataWarning = () => {
     setShowGuestDataWarning(false);
   };

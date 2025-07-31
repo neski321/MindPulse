@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useModal } from "@/contexts/ModalContext";
 import { 
   Moon, 
   Heart, 
@@ -158,6 +159,7 @@ const wellnessTools = [
 ];
 
 export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps) {
+  const { openModal, closeModal } = useModal();
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [showSleepTracker, setShowSleepTracker] = useState(false);
   const [showGratitudeJournal, setShowGratitudeJournal] = useState(false);
@@ -170,6 +172,15 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
   const [showMoodPatternAnalyzer, setShowMoodPatternAnalyzer] = useState(false);
   const [showPeerSupportMatching, setShowPeerSupportMatching] = useState(false);
   const [showContactSupport, setShowContactSupport] = useState(false);
+
+  // Sync modal state with isOpen prop
+  useEffect(() => {
+    if (isOpen) {
+      openModal("wellness-tools-modal");
+    } else {
+      closeModal("wellness-tools-modal");
+    }
+  }, [isOpen, openModal, closeModal]);
 
   const handleToolClick = (toolId: string) => {
     switch (toolId) {
@@ -213,9 +224,10 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
+          key="wellness-tools-modal"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -380,9 +392,10 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
       )}
 
       {/* Tool Components */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showSleepTracker && (
           <SleepTracker
+            key="sleep-tracker"
             onClose={() => setShowSleepTracker(false)}
             onComplete={(data) => {
               console.log("Sleep tracker completed:", data);
@@ -393,6 +406,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showGratitudeJournal && (
           <GratitudeJournal
+            key="gratitude-journal"
             onClose={() => setShowGratitudeJournal(false)}
             onComplete={(data) => {
               console.log("Gratitude journal completed:", data);
@@ -403,6 +417,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showCBTThoughtRecord && (
           <CBTThoughtRecord
+            key="cbt-thought-record"
             onClose={() => setShowCBTThoughtRecord(false)}
             onComplete={(data) => {
               console.log("CBT thought record completed:", data);
@@ -413,6 +428,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showBodyScanMeditation && (
           <BodyScanMeditation
+            key="body-scan-meditation"
             onClose={() => setShowBodyScanMeditation(false)}
             onComplete={(data) => {
               console.log("Body scan meditation completed:", data);
@@ -423,6 +439,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showCrisisSafetyPlanning && (
           <CrisisSafetyPlanning
+            key="crisis-safety-planning"
             onClose={() => setShowCrisisSafetyPlanning(false)}
             onComplete={(data) => {
               console.log("Crisis safety planning completed:", data);
@@ -433,6 +450,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showHabitFormation && (
           <HabitFormation
+            key="habit-formation"
             onClose={() => setShowHabitFormation(false)}
             onComplete={(data) => {
               console.log("Habit formation completed:", data);
@@ -443,6 +461,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showSelfCareMenu && (
           <SelfCareMenu
+            key="self-care-menu"
             onClose={() => setShowSelfCareMenu(false)}
             onComplete={(data) => {
               console.log("Self care menu completed:", data);
@@ -453,6 +472,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showSensoryGrounding && (
           <SensoryGrounding
+            key="sensory-grounding"
             onClose={() => setShowSensoryGrounding(false)}
             onComplete={(data) => {
               console.log("Sensory grounding completed:", data);
@@ -463,6 +483,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showMoodPatternAnalyzer && (
           <MoodPatternAnalyzer
+            key="mood-pattern-analyzer"
             onClose={() => setShowMoodPatternAnalyzer(false)}
             onComplete={(data) => {
               console.log("Mood pattern analyzer completed:", data);
@@ -473,6 +494,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showPeerSupportMatching && (
           <PeerSupportMatching
+            key="peer-support-matching"
             onClose={() => setShowPeerSupportMatching(false)}
             onComplete={(data) => {
               console.log("Peer support matching completed:", data);
@@ -483,6 +505,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
 
         {showContactSupport && (
           <ContactSupport
+            key="contact-support"
             onClose={() => setShowContactSupport(false)}
             initialData={{
               subject: "New Wellness Tool Suggestion",

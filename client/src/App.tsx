@@ -15,6 +15,7 @@ import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { SettingsProvider, useSettings } from "./contexts/SettingsContext";
+import { ModalProvider } from "./contexts/ModalContext";
 import { AuthModal } from "@/components/ui/auth-modal";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,29 +38,31 @@ function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <div className="min-h-screen bg-gray-50 relative">
-              {/* Background Animation */}
-              <BackgroundAnimation />
+        <ModalProvider>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <div className="min-h-screen bg-gray-50 relative">
+                {/* Background Animation */}
+                <BackgroundAnimation />
 
-              {/* Splash Cursor Effect */}
-              <SplashCursorWrapper />
+                {/* Splash Cursor Effect */}
+                <SplashCursorWrapper />
 
-              {/* Main Content */}
-              <div className="relative z-10">
-                <header className="w-full flex justify-end p-2">
-                  <AuthButton />
-                </header>
-                <Router />
-                <BottomNav />
+                {/* Main Content */}
+                <div className="relative z-10">
+                  <header className="w-full flex justify-end p-2">
+                    <AuthButton />
+                  </header>
+                  <Router />
+                  <BottomNav />
+                </div>
+
+                <Toaster />
+                <AuthModalWrapper />
               </div>
-
-              <Toaster />
-              <AuthModalWrapper />
-            </div>
-          </TooltipProvider>
-        </QueryClientProvider>
+            </TooltipProvider>
+          </QueryClientProvider>
+        </ModalProvider>
       </SettingsProvider>
     </AuthProvider>
   );
