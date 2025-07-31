@@ -1,13 +1,24 @@
-import type React from "react"
+import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Heart, Sparkles, Star, ArrowRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useModal } from "@/contexts/ModalContext"
 
 interface WelcomeModalProps {
   onClose: () => void
 }
 
 const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
+  const { openModal } = useModal();
+
+  // Register this modal as open since it's always open when rendered
+  React.useEffect(() => {
+    openModal("welcome-modal");
+    return () => {
+      // Cleanup will be handled by the modal registration hook
+    };
+  }, [openModal]);
+
   return (
     <AnimatePresence>
       <motion.div

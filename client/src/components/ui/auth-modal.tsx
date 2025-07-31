@@ -3,8 +3,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { Heart, Mail, Lock, User, Chrome, UserCheck, Sparkles } from "lucide-react"
 import { useAuth } from "@/AuthContext"
+import { useModal } from "@/contexts/ModalContext"
 import { PrivacyPolicy } from "./privacy-policy"
 import { TermsConditions } from "./terms-conditions"
 
@@ -15,6 +18,7 @@ interface AuthModalProps {
 
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const { login, signUp, loginWithGoogle, signInAsGuest, resetPassword, loading, user, logout } = useAuth()
+  const { openModal, closeModal } = useModal()
   const [mode, setMode] = useState<"login" | "signup" | "forgot-password">("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -28,6 +32,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const [showReminder, setShowReminder] = useState(false)
   const [wasSignedIn, setWasSignedIn] = useState(false)
   const [hasSignedOut, setHasSignedOut] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   const handlePrivacyPolicyOpen = () => {
     setShowPrivacyPolicy(true)
@@ -78,6 +83,15 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     }
   }, [open])
 
+  // Sync modal state with open prop
+  useEffect(() => {
+    if (open) {
+      openModal("auth-modal")
+    } else {
+      closeModal("auth-modal")
+    }
+  }, [open, openModal, closeModal])
+
   // Track when user signs out
   useEffect(() => {
     if (user && !wasSignedIn) {
@@ -103,7 +117,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const handleLogin = async () => {
     setError(null)
     try {
-      await login(email, password)
+      await login(email, password, rememberMe)
       onOpenChange(false)
     } catch (e: any) {
       setError(e.message || "Login failed")
@@ -125,7 +139,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       return
     }
     try {
-      await signUp(email, password, name.trim())
+      await signUp(email, password, name.trim(), rememberMe)
       onOpenChange(false)
     } catch (e: any) {
       setError(e.message || "Signup failed")
@@ -135,7 +149,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const handleGoogle = async () => {
     setError(null)
     try {
-      await loginWithGoogle()
+      await loginWithGoogle(rememberMe)
       onOpenChange(false)
     } catch (e: any) {
       setError(e.message || "Google login failed")
@@ -177,6 +191,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setName("")
     setError(null)
     setSuccess(null)
+    setRememberMe(false)
   }
 
   const switchMode = (newMode: "login" | "signup" | "forgot-password") => {
@@ -354,6 +369,30 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                           Passwords do not match
                         </motion.div>
                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence mode="wait">
+                {(mode === "login" || mode === "signup") && (
+                  <motion.div
+                    key="remember-me"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Switch
+                        id="remember-me"
+                        checked={rememberMe}
+                        onCheckedChange={setRememberMe}
+                        className="data-[state=checked]:bg-blue-500"
+                      />
+                      <Label htmlFor="remember-me" className="text-sm text-gray-600 font-medium cursor-pointer">
+                        Remember me
+                      </Label>
                     </div>
                   </motion.div>
                 )}

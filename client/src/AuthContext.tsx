@@ -23,9 +23,9 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  signUp: (email: string, password: string, name?: string, rememberMe?: boolean) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  loginWithGoogle: (rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -84,12 +84,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       } else {
-        // Check for guest user in localStorage
-        const guest = localStorage.getItem("guestUser");
-        if (guest) {
-          setUser(JSON.parse(guest));
+        // Check for remembered user first
+        const rememberMe = localStorage.getItem("rememberMe");
+        const rememberedUser = localStorage.getItem("rememberedUser");
+        
+        if (rememberMe === "true" && rememberedUser) {
+          try {
+            const user = JSON.parse(rememberedUser);
+            setUser(user);
+          } catch (e) {
+            // If parsing fails, clear the invalid data
+            localStorage.removeItem("rememberMe");
+            localStorage.removeItem("rememberedUser");
+            setUser(null);
+          }
         } else {
-          setUser(null);
+          // Check for guest user in localStorage
+          const guest = localStorage.getItem("guestUser");
+          if (guest) {
+            setUser(JSON.parse(guest));
+          } else {
+            setUser(null);
+          }
         }
       }
       setLoading(false);
@@ -97,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name?: string) => {
+  const signUp = async (email: string, password: string, name?: string, rememberMe?: boolean) => {
     setLoading(true);
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     if (name) {
@@ -108,22 +124,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always use the name from the form
     const syncedUser = await fetchOrCreateUser(cred.user.uid, email, name);
     setUser(syncedUser);
+    
+    // Store remember me preference
+    if (rememberMe) {
+      localStorage.setItem("rememberMe", "true");
+      localStorage.setItem("rememberedUser", JSON.stringify(syncedUser));
+    }
+    
     setLoading(false);
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe?: boolean) => {
     setLoading(true);
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const syncedUser = await fetchOrCreateUser(cred.user.uid, cred.user.email || undefined, cred.user.displayName || undefined);
     setUser(syncedUser);
+    
+    // Store remember me preference
+    if (rememberMe) {
+      localStorage.setItem("rememberMe", "true");
+      localStorage.setItem("rememberedUser", JSON.stringify(syncedUser));
+    }
+    
     setLoading(false);
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (rememberMe?: boolean) => {
     setLoading(true);
     const cred = await signInWithPopup(auth, googleProvider);
     const syncedUser = await fetchOrCreateUser(cred.user.uid, cred.user.email || undefined, cred.user.displayName || undefined);
     setUser(syncedUser);
+    
+    // Store remember me preference
+    if (rememberMe) {
+      localStorage.setItem("rememberMe", "true");
+      localStorage.setItem("rememberedUser", JSON.stringify(syncedUser));
+    }
+    
     setLoading(false);
   };
 
@@ -131,6 +168,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     await signOut(auth);
     setUser(null);
+    
+    // Clear remember me data
+    localStorage.removeItem("rememberMe");
+    localStorage.removeItem("rememberedUser");
+    
     setLoading(false);
   };
 
