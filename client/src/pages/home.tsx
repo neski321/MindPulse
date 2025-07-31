@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/AuthContext"
 import WelcomeModal from "../components/ui/welcome-modal";
+import GuestDataWarning from "../components/ui/guest-data-warning";
 import Magnet from "@/components/magnet";
 import { useSettings } from "@/contexts/SettingsContext";
 import { RecommendationsCard } from "@/components/recommendations-card";
@@ -86,6 +87,7 @@ export default function Home() {
   const [showThoughtCheckin, setShowThoughtCheckin] = useState(false)
   const [showQuickMeditation, setShowQuickMeditation] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showGuestDataWarning, setShowGuestDataWarning] = useState(false);
   const [showWellnessTools, setShowWellnessTools] = useState(false);
   const { magnetEffect } = useSettings();
   const moodTrackerRef = useRef<HTMLDivElement>(null);
@@ -134,6 +136,21 @@ export default function Home() {
   const handleCloseWelcome = () => {
     localStorage.setItem("hasSeenWelcome", "true");
     setShowWelcome(false);
+    
+    // Show guest data warning for guest users
+    if (user?.isGuest) {
+      setShowGuestDataWarning(true);
+    }
+  };
+
+  const handleCloseGuestDataWarning = () => {
+    setShowGuestDataWarning(false);
+  };
+
+  const handleCreateAccount = () => {
+    setShowGuestDataWarning(false);
+    // Trigger the auth modal to open
+    window.dispatchEvent(new CustomEvent('open-auth-modal'));
   };
 
   // Fetch user data
@@ -271,6 +288,12 @@ export default function Home() {
   return (
     <>
       {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
+      {showGuestDataWarning && (
+        <GuestDataWarning 
+          onClose={handleCloseGuestDataWarning}
+          onCreateAccount={handleCreateAccount}
+        />
+      )}
       <div className="min-h-screen">
         <motion.div
           variants={containerVariants}

@@ -27,6 +27,7 @@ import { SelfCareMenu } from "@/components/self-care-menu";
 import { SensoryGrounding } from "@/components/sensory-grounding";
 import { MoodPatternAnalyzer } from "@/components/mood-pattern-analyzer";
 import { PeerSupportMatching } from "@/components/peer-support-matching";
+import { ContactSupport } from "@/components/contact-support";
 
 interface WellnessToolsModalProps {
   isOpen: boolean;
@@ -168,6 +169,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
   const [showSensoryGrounding, setShowSensoryGrounding] = useState(false);
   const [showMoodPatternAnalyzer, setShowMoodPatternAnalyzer] = useState(false);
   const [showPeerSupportMatching, setShowPeerSupportMatching] = useState(false);
+  const [showContactSupport, setShowContactSupport] = useState(false);
 
   const handleToolClick = (toolId: string) => {
     switch (toolId) {
@@ -363,7 +365,8 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-indigo-200 shadow-sm"
+                    className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-indigo-200 shadow-sm cursor-pointer"
+                    onClick={() => setShowContactSupport(true)}
                   >
                     <span className="text-xs font-medium text-indigo-600">💡</span>
                     <span className="text-xs font-medium text-gray-700">Suggest a new tool</span>
@@ -474,6 +477,17 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
             onComplete={(data) => {
               console.log("Peer support matching completed:", data);
               setShowPeerSupportMatching(false);
+            }}
+          />
+        )}
+
+        {showContactSupport && (
+          <ContactSupport
+            onClose={() => setShowContactSupport(false)}
+            initialData={{
+              subject: "New Wellness Tool Suggestion",
+              message: "I would like to suggest a new wellness tool for MindEase. Here are my ideas:\n\n• Tool name:\n• Description:\n• Why it would be helpful:\n• Any specific features you'd like to see:\n\nThank you for considering my suggestion!",
+              priority: "normal"
             }}
           />
         )}

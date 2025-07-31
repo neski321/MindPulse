@@ -5,6 +5,7 @@ import {
   communityPosts, 
   postComments, 
   userProgress,
+  contactSupportMessages,
   type User, 
   type InsertUser,
   type MoodEntry,
@@ -17,6 +18,8 @@ import {
   type InsertPostComment,
   type UserProgress,
   type InsertUserProgress,
+  type ContactSupportMessage,
+  type InsertContactSupportMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
@@ -49,6 +52,15 @@ export interface IStorage {
   getUserProgress(userId: number): Promise<UserProgress | undefined>;
   updateUserProgress(userId: number, progress: Partial<InsertUserProgress>): Promise<UserProgress>;
   incrementStreak(userId: number): Promise<void>;
+
+  // Contact support operations
+  createContactSupportMessage(message: InsertContactSupportMessage): Promise<ContactSupportMessage>;
+  
+  // Admin operations for contact messages
+  getAllContactMessages(): Promise<ContactSupportMessage[]>;
+  getContactMessageById(id: number): Promise<ContactSupportMessage | undefined>;
+  updateContactMessageStatus(id: number, status: string): Promise<ContactSupportMessage>;
+  deleteContactMessage(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -215,6 +227,40 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(userProgress.userId, userId));
+  }
+
+  async createContactSupportMessage(message: InsertContactSupportMessage): Promise<ContactSupportMessage> {
+    const [result] = await db.insert(contactSupportMessages).values(message).returning();
+    return result;
+  }
+
+  async getAllContactMessages(): Promise<ContactSupportMessage[]> {
+    return await db.select()
+      .from(contactSupportMessages)
+      .orderBy(desc(contactSupportMessages.createdAt));
+  }
+
+  async getContactMessageById(id: number): Promise<ContactSupportMessage | undefined> {
+    const [message] = await db.select()
+      .from(contactSupportMessages)
+      .where(eq(contactSupportMessages.id, id));
+    return message || undefined;
+  }
+
+  async updateContactMessageStatus(id: number, status: string): Promise<ContactSupportMessage> {
+    const [message] = await db.update(contactSupportMessages)
+      .set({ 
+        status, 
+        updatedAt: new Date() 
+      })
+      .where(eq(contactSupportMessages.id, id))
+      .returning();
+    return message;
+  }
+
+  async deleteContactMessage(id: number): Promise<void> {
+    await db.delete(contactSupportMessages)
+      .where(eq(contactSupportMessages.id, id));
   }
 }
 
