@@ -21,6 +21,7 @@ import Magnet from "@/components/magnet";
 import { useSettings } from "@/contexts/SettingsContext";
 import { RecommendationsCard } from "@/components/recommendations-card";
 import { WellnessToolsModal } from "@/components/ui/wellness-tools-modal";
+import { ProfilePopup } from "@/components/ui/profile-popup";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -89,8 +90,10 @@ export default function Home() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showGuestDataWarning, setShowGuestDataWarning] = useState(false);
   const [showWellnessTools, setShowWellnessTools] = useState(false);
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
   const { magnetEffect } = useSettings();
   const moodTrackerRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   // Show welcome modal for first-time users
   useEffect(() => {
@@ -241,27 +244,25 @@ export default function Home() {
     moodMutation.mutate({ mood, intensity, secondaryMood })
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center space-y-4"
-        >
+  // Show a subtle loading indicator instead of blocking the entire page
+  const LoadingIndicator = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed top-4 right-4 z-50"
+    >
+      <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-lg border border-gray-200">
+        <div className="flex items-center space-x-2">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            className="w-12 h-12 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center"
-          >
-            <Sparkles className="w-6 h-6 text-white" />
-          </motion.div>
-          <p className="text-gray-600 font-medium">Loading your wellness space...</p>
-        </motion.div>
+            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+            className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+          />
+          <span className="text-xs text-gray-600">Loading...</span>
+        </div>
       </div>
-    )
-  }
+    </motion.div>
+  )
 
   if (!user) {
     return (
@@ -275,7 +276,7 @@ export default function Home() {
           <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-6">
             <Heart className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800">Welcome to MindEase</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Welcome to MindPulse</h2>
           <p className="text-gray-600">Please log in or sign up to continue your wellness journey.</p>
         </motion.div>
       </div>
@@ -287,6 +288,7 @@ export default function Home() {
 
   return (
     <>
+      {loading && <LoadingIndicator />}
       {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
       {showGuestDataWarning && (
         <GuestDataWarning 
@@ -316,15 +318,26 @@ export default function Home() {
                   <Heart className="w-5 h-5 text-white" />
                 </motion.div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  MindEase
+                  MindPulse
                 </h1>
               </div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 rounded-full">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
+                <Button 
+                  ref={profileButtonRef}
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-gray-400 hover:text-gray-600 rounded-full"
+                  onClick={() => setShowProfilePopup(!showProfilePopup)}
+                >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center shadow-md">
                     <span className="text-sm font-bold text-white">{userName[0]?.toUpperCase()}</span>
                   </div>
                 </Button>
+                <ProfilePopup 
+                  isOpen={showProfilePopup}
+                  onClose={() => setShowProfilePopup(false)}
+                  triggerRef={profileButtonRef}
+                />
               </motion.div>
             </div>
           </motion.header>
@@ -436,7 +449,30 @@ export default function Home() {
 
           {/* Recommendations Section */}
           <motion.div variants={itemVariants}>
-            <RecommendationsCard />
+            <div className="relative">
+              <div className={user?.isGuest ? 'blur-sm' : ''}>
+                <RecommendationsCard />
+              </div>
+              {user?.isGuest && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl z-10">
+                  <div className="text-center space-y-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800">✨ Unlock Your Wellness Journey</p>
+                      <p className="text-sm text-gray-600">Get personalized recommendations just for you!</p>
+                    </div>
+                    <Button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal'))}
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 rounded-full px-6 py-2 text-sm font-medium"
+                    >
+                      Start Your Journey ✨
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
 
           {/* Progress Section */}
@@ -582,79 +618,102 @@ export default function Home() {
 
           {/* Community Support */}
           <motion.div variants={itemVariants}>
-            <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0 rounded-3xl overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-800">Community Support</h3>
-                  <div className="flex items-center space-x-2">
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-                      className="w-3 h-3 bg-green-400 rounded-full"
-                    />
-                    <span className="text-sm text-gray-500 font-medium">Active</span>
+            <div className="relative">
+              <div className={user?.isGuest ? 'blur-sm' : ''}>
+                <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0 rounded-3xl overflow-hidden">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-gray-800">Community Support</h3>
+                      <div className="flex items-center space-x-2">
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                          className="w-3 h-3 bg-green-400 rounded-full"
+                        />
+                        <span className="text-sm text-gray-500 font-medium">Active</span>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {communityData?.posts?.length > 0 ? (
+                        <AnimatePresence>
+                          {communityData.posts.slice(0, 1).map((post: any, index: number) => (
+                            <motion.div
+                              key={post.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200"
+                            >
+                              <div className="flex items-start space-x-4">
+                                <motion.div
+                                  whileHover={{ scale: 1.1 }}
+                                  className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center shadow-md"
+                                >
+                                  <span className="text-white text-sm font-bold">A</span>
+                                </motion.div>
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-700 leading-relaxed">{post.content}</p>
+                                  <div className="flex items-center space-x-4 mt-3">
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      className="text-xs text-gray-500 hover:text-red-500 transition-colors flex items-center space-x-1"
+                                    >
+                                      <Heart className="w-3 h-3" />
+                                      <span>{post.likes}</span>
+                                    </motion.button>
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(post.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-center py-8 text-gray-500"
+                        >
+                          <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                          <p className="font-medium">No community posts yet</p>
+                          <p className="text-sm">Be the first to share your experience</p>
+                        </motion.div>
+                      )}
+                    </div>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        className="w-full mt-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 transition-all duration-300 rounded-2xl py-3 font-medium shadow-lg"
+                        onClick={() => setLocation("/community")}
+                      >
+                        Join the Conversation
+                      </Button>
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </div>
+              {user?.isGuest && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl z-10">
+                  <div className="text-center space-y-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800">🌟 Join Our Supportive Community</p>
+                      <p className="text-sm text-gray-600">Connect with amazing people on similar wellness journeys!</p>
+                    </div>
+                    <Button
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal'))}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-full px-6 py-2 text-sm font-medium"
+                    >
+                      Join the Fun! 🌟
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  {communityData?.posts?.length > 0 ? (
-                    <AnimatePresence>
-                      {communityData.posts.slice(0, 1).map((post: any, index: number) => (
-                        <motion.div
-                          key={post.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200"
-                        >
-                          <div className="flex items-start space-x-4">
-                            <motion.div
-                              whileHover={{ scale: 1.1 }}
-                              className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center shadow-md"
-                            >
-                              <span className="text-white text-sm font-bold">A</span>
-                            </motion.div>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-700 leading-relaxed">{post.content}</p>
-                              <div className="flex items-center space-x-4 mt-3">
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  className="text-xs text-gray-500 hover:text-red-500 transition-colors flex items-center space-x-1"
-                                >
-                                  <Heart className="w-3 h-3" />
-                                  <span>{post.likes}</span>
-                                </motion.button>
-                                <span className="text-xs text-gray-400">
-                                  {new Date(post.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-center py-8 text-gray-500"
-                    >
-                      <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                      <p className="font-medium">No community posts yet</p>
-                      <p className="text-sm">Be the first to share your experience</p>
-                    </motion.div>
-                  )}
-                </div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button 
-                    className="w-full mt-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 transition-all duration-300 rounded-2xl py-3 font-medium shadow-lg"
-                    onClick={() => setLocation("/community")}
-                  >
-                    Join the Conversation
-                  </Button>
-                </motion.div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
           </motion.div>
 
           {/* Emergency Resources */}

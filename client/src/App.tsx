@@ -37,15 +37,54 @@ function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <InnerApp />
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <div className="min-h-screen bg-gray-50 relative">
+              {/* Background Animation */}
+              <BackgroundAnimation />
+
+              {/* Splash Cursor Effect */}
+              <SplashCursorWrapper />
+
+              {/* Main Content */}
+              <div className="relative z-10">
+                <header className="w-full flex justify-end p-2">
+                  <AuthButton />
+                </header>
+                <Router />
+                <BottomNav />
+              </div>
+
+              <Toaster />
+              <AuthModalWrapper />
+            </div>
+          </TooltipProvider>
+        </QueryClientProvider>
       </SettingsProvider>
     </AuthProvider>
   );
 }
 
-function InnerApp() {
-  const { user, loading } = useAuth();
+function SplashCursorWrapper() {
   const { cursorEffects } = useSettings();
+  return cursorEffects ? <SplashCursor /> : null;
+}
+
+function AuthButton() {
+  const { user, loading } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
+
+  if (user || loading) return null;
+
+  return (
+    <Button onClick={() => setAuthOpen(true)} variant="outline">
+      Login / Sign Up / Guest
+    </Button>
+  );
+}
+
+function AuthModalWrapper() {
+  const { user, loading } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
 
   // Listen for custom event to open AuthModal from anywhere
@@ -56,33 +95,7 @@ function InnerApp() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen bg-gray-50 relative">
-          {/* Background Animation */}
-          <BackgroundAnimation />
-
-          {/* Splash Cursor Effect */}
-          {cursorEffects && <SplashCursor />}
-
-          {/* Main Content */}
-          <div className="relative z-10">
-            <header className="w-full flex justify-end p-2">
-              {!user && !loading && (
-                <Button onClick={() => setAuthOpen(true)} variant="outline">
-                  Login / Sign Up / Guest
-                </Button>
-              )}
-            </header>
-            <Router />
-            <BottomNav />
-          </div>
-
-          <Toaster />
-          <AuthModal open={authOpen || (!user && !loading)} onOpenChange={setAuthOpen} />
-        </div>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AuthModal open={authOpen || (!user && !loading)} onOpenChange={setAuthOpen} />
   );
 }
 

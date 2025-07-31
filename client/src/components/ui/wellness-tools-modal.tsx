@@ -486,7 +486,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
             onClose={() => setShowContactSupport(false)}
             initialData={{
               subject: "New Wellness Tool Suggestion",
-              message: "I would like to suggest a new wellness tool for MindEase. Here are my ideas:\n\n• Tool name:\n• Description:\n• Why it would be helpful:\n• Any specific features you'd like to see:\n\nThank you for considering my suggestion!",
+              message: "I would like to suggest a new wellness tool for MindPulse. Here are my ideas:\n\n• Tool name:\n• Description:\n• Why it would be helpful:\n• Any specific features you'd like to see:\n\nThank you for considering my suggestion!",
               priority: "normal"
             }}
           />

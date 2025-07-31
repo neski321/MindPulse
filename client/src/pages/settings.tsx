@@ -323,30 +323,29 @@ export default function Settings() {
     },
   ]
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center space-y-4"
-        >
+  // Show a subtle loading indicator instead of blocking the entire page
+  const LoadingIndicator = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed top-4 right-4 z-50"
+    >
+      <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-lg border border-gray-200">
+        <div className="flex items-center space-x-2">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            className="w-12 h-12 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center"
-          >
-            <Sparkles className="w-6 h-6 text-white" />
-          </motion.div>
-          <p className="text-gray-600 font-medium">Loading settings...</p>
-        </motion.div>
+            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+            className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+          />
+          <span className="text-xs text-gray-600">Loading...</span>
+        </div>
       </div>
-    )
-  }
+    </motion.div>
+  )
 
   return (
     <div className="min-h-screen">
+      {loading && <LoadingIndicator />}
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -361,7 +360,7 @@ export default function Settings() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
             Settings
           </h1>
-          <p className="text-gray-600 text-lg">Customize your MindEase experience</p>
+          <p className="text-gray-600 text-lg">Customize your MindPulse experience</p>
         </motion.div>
 
         {/* Account Overview */}
@@ -725,7 +724,7 @@ export default function Settings() {
                   <Heart className="w-10 h-10 text-white" />
                 </motion.div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-2xl mb-2">MindEase</h3>
+                  <h3 className="font-bold text-gray-900 text-2xl mb-2">MindPulse</h3>
                   <p className="text-gray-600 mb-4">Mental Health Companion</p>
                   <Badge className="bg-white/60 text-purple-700 border-purple-200 rounded-full px-4 py-2">
                     <Star className="w-3 h-3 mr-1" />
@@ -733,7 +732,7 @@ export default function Settings() {
                   </Badge>
                 </div>
                 <div className="text-sm text-gray-500 space-y-2">
-                  <p>© 2024 MindEase. All rights reserved.</p>
+                  <p>© 2024 MindPulse. All rights reserved.</p>
                   <div className="flex justify-center gap-6">
                     <motion.button
                       whileHover={{ scale: 1.05 }}

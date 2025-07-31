@@ -36,8 +36,8 @@ interface FAQItem {
 const faqData: FAQItem[] = [
   {
     id: "getting-started",
-    question: "How do I get started with MindEase?",
-    answer: "Welcome to MindEase! Start by creating an account or using guest mode. Then, try logging your first mood entry using the mood tracker on the home screen. You'll receive personalized recommendations based on your mood patterns.",
+    question: "How do I get started with MindPulse?",
+answer: "Welcome to MindPulse! Start by creating an account or using guest mode. Then, try logging your first mood entry using the mood tracker on the home screen. You'll receive personalized recommendations based on your mood patterns.",
     category: "Getting Started",
     tags: ["beginner", "mood", "tracking"]
   },
@@ -51,7 +51,7 @@ const faqData: FAQItem[] = [
   {
     id: "wellness-tools",
     question: "What wellness tools are available?",
-    answer: "MindEase offers 10+ evidence-based wellness tools including breathing exercises, meditation, CBT thought records, gratitude journaling, sleep tracking, habit formation, sensory grounding, and more. Access them through the 'Looking for More?' button on the home screen.",
+    answer: "MindPulse offers 10+ evidence-based wellness tools including breathing exercises, meditation, CBT thought records, gratitude journaling, sleep tracking, habit formation, sensory grounding, and more. Access them through the 'Looking for More?' button on the home screen.",
     category: "Features",
     tags: ["tools", "wellness", "meditation", "breathing"]
   },

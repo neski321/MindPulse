@@ -78,27 +78,25 @@ export default function Progress() {
     enabled: !!user,
   })
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center space-y-4"
-        >
+  // Show a subtle loading indicator instead of blocking the entire page
+  const LoadingIndicator = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed top-4 right-4 z-50"
+    >
+      <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-lg border border-gray-200">
+        <div className="flex items-center space-x-2">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            className="w-12 h-12 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center"
-          >
-            <Sparkles className="w-6 h-6 text-white" />
-          </motion.div>
-          <p className="text-gray-600 font-medium">Loading your progress...</p>
-        </motion.div>
+            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+            className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+          />
+          <span className="text-xs text-gray-600">Loading...</span>
+        </div>
       </div>
-    )
-  }
+    </motion.div>
+  )
 
   if (!user) {
     return (
@@ -125,6 +123,7 @@ export default function Progress() {
 
   return (
     <div className="min-h-screen">
+      {loading && <LoadingIndicator />}
       <motion.div
         variants={containerVariants}
         initial="hidden"

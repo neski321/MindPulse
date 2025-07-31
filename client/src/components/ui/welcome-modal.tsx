@@ -114,7 +114,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
               }}
               className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
             >
-              Welcome to MindEase!
+              Welcome to MindPulse!
             </motion.h2>
 
             {/* Subtitle */}
@@ -158,7 +158,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
               transition={{ delay: 1.0, duration: 0.8 }}
               className="mb-8 text-gray-600 leading-relaxed"
             >
-              MindEase is your safe space to reflect, grow, and find support. Take a moment to explore and make today a
+              MindPulse is your safe space to reflect, grow, and find support. Take a moment to explore and make today a
               little brighter.
             </motion.p>
 
