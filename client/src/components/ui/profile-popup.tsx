@@ -95,7 +95,7 @@ export function ProfilePopup({ isOpen, onClose, triggerRef }: ProfilePopupProps)
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="absolute top-full left-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 z-50 overflow-hidden"
+          className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 z-50 overflow-hidden"
           style={{
             filter: "drop-shadow(0 10px 25px rgba(0, 0, 0, 0.1))",
           }}
