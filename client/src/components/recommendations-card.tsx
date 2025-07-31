@@ -356,10 +356,10 @@ export function RecommendationsCard({ className = "" }: RecommendationsCardProps
                 <Heart className="w-8 h-8 text-white" />
               </div>
               <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                Start Your Wellness Journey
+                🌱 Start Your Wellness Adventure
               </h4>
               <p className="text-gray-600 text-sm mb-4">
-                Log your mood for 2 consecutive days to unlock personalized recommendations tailored just for you.
+                Log your mood for 2 consecutive days to unlock magical personalized recommendations just for you!
               </p>
               <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -383,49 +383,23 @@ export function RecommendationsCard({ className = "" }: RecommendationsCardProps
       transition={{ duration: 0.5 }}
       className={className}
     >
-      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800">For You</h3>
-            </div>
-            <Badge variant="outline" className="text-xs">
-              Personalized
-            </Badge>
-          </div>
-
-          {/* Guest user overlay */}
-          {isGuestUser && (
-            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
-              <div className="text-center space-y-4 p-6">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
-                  <Sparkles className="w-8 h-8 text-white" />
+      <div className="relative">
+        <div className={isGuestUser ? 'blur-sm' : ''}>
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">For You</h3>
                 </div>
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                    Personalized Recommendations
-                  </h4>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Sign up to get personalized wellness recommendations based on your mood and preferences.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      // Trigger auth modal
-                      window.dispatchEvent(new CustomEvent('open-auth-modal'));
-                    }}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
-                  >
-                    Sign Up for Free
-                  </Button>
-                </div>
+                <Badge variant="outline" className="text-xs">
+                  Personalized
+                </Badge>
               </div>
-            </div>
-          )}
 
-          <div className={`space-y-3 ${isGuestUser ? 'blur-sm pointer-events-none' : ''}`}>
+              <div className="space-y-3">
             <AnimatePresence mode="wait">
               {activeRecommendations.slice(0, 3).map((recommendation: Recommendation, index: number) => (
                 <motion.div
@@ -624,6 +598,35 @@ export function RecommendationsCard({ className = "" }: RecommendationsCardProps
           </div>
         </CardContent>
       </Card>
+        </div>
+        {/* Guest user overlay */}
+        {isGuestUser && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+            <div className="text-center space-y-4 p-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                  🎯 Your Perfect Wellness Match
+                </h4>
+                <p className="text-gray-600 text-sm mb-4">
+                  Sign up to discover personalized wellness recommendations that are just right for you!
+                </p>
+                <Button
+                  onClick={() => {
+                    // Trigger auth modal
+                    window.dispatchEvent(new CustomEvent('open-auth-modal'));
+                  }}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+                                  >
+                    Discover Your Match! 🎯
+                  </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 } 

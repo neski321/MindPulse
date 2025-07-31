@@ -99,7 +99,7 @@ export function ContactSupport({ onClose, initialData }: ContactSupportProps) {
       color: "from-purple-400 to-violet-500",
       bg: "from-purple-50 to-violet-50",
       action: () => {
-        window.open("tel:+1-800-MINDEASE", "_blank");
+        window.open("tel:+1-800-MINDPULSE", "_blank");
       },
       external: true
     },

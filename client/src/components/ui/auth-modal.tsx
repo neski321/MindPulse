@@ -12,13 +12,14 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
-  const { login, signUp, loginWithGoogle, signInAsGuest, loading } = useAuth()
-  const [mode, setMode] = useState<"login" | "signup">("login")
+  const { login, signUp, loginWithGoogle, signInAsGuest, resetPassword, loading } = useAuth()
+  const [mode, setMode] = useState<"login" | "signup" | "forgot-password">("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleLogin = async () => {
     setError(null)
@@ -72,15 +73,34 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     }
   }
 
+  const handleResetPassword = async () => {
+    setError(null)
+    setSuccess(null)
+    if (!email.trim()) {
+      setError("Please enter your email address")
+      return
+    }
+    try {
+      await resetPassword(email.trim())
+      setSuccess("Password reset email sent! Check your inbox.")
+      setTimeout(() => {
+        switchMode("login")
+      }, 3000)
+    } catch (e: any) {
+      setError(e.message || "Failed to send reset email")
+    }
+  }
+
   const clearForm = () => {
     setEmail("")
     setPassword("")
     setConfirmPassword("")
     setName("")
     setError(null)
+    setSuccess(null)
   }
 
-  const switchMode = (newMode: "login" | "signup") => {
+  const switchMode = (newMode: "login" | "signup" | "forgot-password") => {
     setMode(newMode)
     clearForm()
   }
@@ -130,10 +150,12 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             </motion.div>
             <motion.div variants={itemVariants}>
               <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {mode === "login" ? "Welcome Back" : "Join MindEase"}
+                {mode === "login" ? "Welcome Back" : mode === "signup" ? "Join MindPulse" : "Reset Password"}
               </DialogTitle>
               <DialogDescription className="text-gray-600 mt-2">
-                {mode === "login" ? "Continue your wellness journey" : "Start your mental wellness journey today"}
+                {mode === "login" ? "Continue your wellness journey" : 
+                 mode === "signup" ? "Start your mental wellness journey today" : 
+                 "Enter your email to receive a password reset link"}
               </DialogDescription>
             </motion.div>
           </DialogHeader>
@@ -148,6 +170,16 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm text-center"
                 >
                   {error}
+                </motion.div>
+              )}
+              {success && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="p-4 bg-green-50 border border-green-200 rounded-2xl text-green-600 text-sm text-center"
+                >
+                  {success}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -187,17 +219,29 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
               />
             </div>
 
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                className="pl-10 rounded-2xl border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white/80 backdrop-blur-sm"
-              />
-            </div>
+            <AnimatePresence mode="wait">
+              {(mode === "login" || mode === "signup") && (
+                <motion.div
+                  key="password-field"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                      className="pl-10 rounded-2xl border-gray-200 focus:border-blue-400 focus:ring-blue-400 bg-white/80 backdrop-blur-sm"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence mode="wait">
               {mode === "signup" && (
@@ -236,10 +280,16 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
-                onClick={mode === "login" ? handleLogin : handleSignup}
+                onClick={
+                  mode === "login" ? handleLogin : 
+                  mode === "signup" ? handleSignup : 
+                  handleResetPassword
+                }
                 disabled={
                   loading || 
-                  (mode === "signup" && (!email || !password || !confirmPassword || !name.trim() || password !== confirmPassword))
+                  (mode === "signup" && (!email || !password || !confirmPassword || !name.trim() || password !== confirmPassword)) ||
+                  (mode === "login" && (!email || !password)) ||
+                  (mode === "forgot-password" && !email.trim())
                 }
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 rounded-2xl py-3 font-medium shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -251,47 +301,61 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   />
                 ) : (
                   <>
-                    {mode === "login" ? "Sign In" : "Create Account"}
+                    {mode === "login" ? "Sign In" : 
+                     mode === "signup" ? "Create Account" : 
+                     "Send Reset Email"}
                     <Sparkles className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
             </motion.div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">or continue with</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  onClick={handleGoogle}
-                  variant="outline"
-                  disabled={loading}
-                  className="w-full border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-2xl py-3 font-medium transition-all duration-300 bg-transparent"
+            <AnimatePresence mode="wait">
+              {(mode === "login" || mode === "signup") && (
+                <motion.div
+                  key="social-login"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <Chrome className="w-5 h-5 mr-2 text-blue-500" />
-                  Continue with Google
-                </Button>
-              </motion.div>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-4 bg-white text-gray-500 font-medium">or continue with</span>
+                    </div>
+                  </div>
 
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  onClick={handleGuest}
-                  variant="secondary"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 rounded-2xl py-3 font-medium transition-all duration-300"
-                >
-                  <UserCheck className="w-5 h-5 mr-2" />
-                  Continue as Guest
-                </Button>
-              </motion.div>
-            </div>
+                  <div className="space-y-3">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={handleGoogle}
+                        variant="outline"
+                        disabled={loading}
+                        className="w-full border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-2xl py-3 font-medium transition-all duration-300 bg-transparent"
+                      >
+                        <Chrome className="w-5 h-5 mr-2 text-blue-500" />
+                        Continue with Google
+                      </Button>
+                    </motion.div>
+
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={handleGuest}
+                        variant="secondary"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 rounded-2xl py-3 font-medium transition-all duration-300"
+                      >
+                        <UserCheck className="w-5 h-5 mr-2" />
+                        Continue as Guest
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <motion.div variants={itemVariants} className="text-center text-sm text-gray-500">
               {mode === "login" ? (
@@ -305,10 +369,31 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   >
                     Sign Up
                   </motion.button>
+                  <br />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-blue-600 hover:text-blue-700 font-medium underline transition-colors"
+                    onClick={() => switchMode("forgot-password")}
+                  >
+                    Forgot Password?
+                  </motion.button>
+                </>
+              ) : mode === "signup" ? (
+                <>
+                  Already have an account?{" "}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-blue-600 hover:text-blue-700 font-medium underline transition-colors"
+                    onClick={() => switchMode("login")}
+                  >
+                    Sign In
+                  </motion.button>
                 </>
               ) : (
                 <>
-                  Already have an account?{" "}
+                  Remember your password?{" "}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
