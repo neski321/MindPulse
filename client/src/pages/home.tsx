@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Smile, Wind, Users, Phone, TriangleAlert, Brain, Flower2, Sparkles, Plus } from "lucide-react"
+import { Heart, Smile, Wind, Users, Phone, TriangleAlert, Brain, Flower2, Sparkles, Plus, BookOpen, Headphones, Wrench } from "lucide-react"
 import { useLocation } from "wouter"
 import { MoodTracker } from "@/components/mood-tracker"
 import { BreathingExercise } from "@/components/breathing-exercise"
@@ -585,19 +585,36 @@ export default function Home() {
                   desc: "Evidence-based insights",
                   color: "from-blue-400 to-blue-500",
                   bg: "from-blue-50 to-blue-100",
+                  icon: BookOpen,
+                  onClick: () => {
+                    setLocation("/resources");
+                    toast({
+                      title: "Opening Resources",
+                      description: "Taking you to our curated articles and resources.",
+                    });
+                  },
                 },
                 {
                   title: "Podcasts",
                   desc: "Expert conversations",
                   color: "from-green-400 to-green-500",
                   bg: "from-green-50 to-green-100",
+                  icon: Headphones,
+                  onClick: () => {
+                    setLocation("/resources");
+                    toast({
+                      title: "Opening Resources",
+                      description: "Taking you to our curated podcasts and audio content.",
+                    });
+                  },
                 },
                 {
-                  title: "Community",
-                  desc: "Anonymous support",
-                  color: "from-purple-400 to-purple-500",
-                  bg: "from-purple-50 to-purple-100",
-                  icon: Users,
+                  title: "Wellness Tools",
+                  desc: "Interactive tools",
+                  color: "from-orange-400 to-orange-500",
+                  bg: "from-orange-50 to-orange-100",
+                  icon: Wrench,
+                  onClick: () => setShowWellnessTools(true),
                 },
                 {
                   title: "Crisis Help",
@@ -613,7 +630,7 @@ export default function Home() {
                   variants={itemVariants}
                   whileHover="hover"
                   whileTap="tap"
-                  className="cursor-pointer"
+                  className="cursor-pointer hover:scale-105 transition-transform duration-200"
                   onClick={item.onClick}
                 >
                   <Card

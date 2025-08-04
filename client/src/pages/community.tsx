@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Users, Heart, MessageCircle, Send, Shield, Plus, Sparkles } from "lucide-react"
+import { Users, Heart, MessageCircle, Send, Shield, Plus, Sparkles, Trash2 } from "lucide-react"
 import { apiRequest, queryClient } from "@/lib/queryClient"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/AuthContext"
@@ -77,7 +77,7 @@ function buildCommentTree(comments: any[]) {
 }
 
 // Recursive comment renderer
-function CommentNode({ comment, level, onReply, replyingToCommentId, replyContent, setReplyContent, createCommentMutation, refetchComments }: any) {
+function CommentNode({ comment, level, onReply, replyingToCommentId, replyContent, setReplyContent, createCommentMutation, refetchComments, deleteCommentMutation, user }: any) {
   // Explicitly type onReply
   const handleReply = (id: number | null) => onReply(id);
   const formatTimeAgo = (dateString: string) => {
@@ -105,6 +105,17 @@ function CommentNode({ comment, level, onReply, replyingToCommentId, replyConten
           <Button size="sm" variant="ghost" className="text-xs px-2 py-0.5" onClick={() => handleReply(comment.id as number)}>
             Reply
           </Button>
+          {user && comment.userId === user.id && (
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="text-xs px-2 py-0.5 text-red-500 hover:text-red-700 hover:bg-red-50" 
+              onClick={() => deleteCommentMutation.mutate(comment.id)}
+              disabled={deleteCommentMutation.isPending}
+            >
+              Delete
+            </Button>
+          )}
         </div>
         {replyingToCommentId === comment.id && (
           <div className="mt-2 space-y-2">
@@ -153,6 +164,8 @@ function CommentNode({ comment, level, onReply, replyingToCommentId, replyConten
               setReplyContent={setReplyContent}
               createCommentMutation={createCommentMutation}
               refetchComments={refetchComments}
+              deleteCommentMutation={deleteCommentMutation}
+              user={user}
             />
           ))}
         </div>
@@ -252,15 +265,66 @@ export default function Community() {
     onSuccess: () => {
       setReplyContent("");
       setReplyingToPostId(null);
+      // Invalidate posts query to refresh reply counts
+      queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
       toast({
         title: "Reply posted!",
         description: "Your reply has been added.",
       });
-      // Optionally: refetch comments for the post here
     },
     onError: (error: any) => {
       toast({
         title: "Error posting reply",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      if (!user) throw new Error("No user");
+      const response = await apiRequest("DELETE", `/api/community/posts/${postId}`, {
+        userId: user.id,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      toast({
+        title: "Post deleted",
+        description: "Your post has been removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting post",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      if (!user) throw new Error("No user");
+      const response = await apiRequest("DELETE", `/api/community/comments/${commentId}`, {
+        userId: user.id,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting comment",
         description: error.message,
         variant: "destructive",
       });
@@ -627,6 +691,18 @@ export default function Community() {
                                   <span className="ml-1 text-xs text-gray-400">({replyCount})</span>
                                 )}
                               </motion.button>
+                              {user && post.userId === user.id && (
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => deletePostMutation.mutate(post.id)}
+                                  disabled={deletePostMutation.isPending}
+                                  className="flex items-center space-x-2 text-xs text-gray-500 hover:text-red-500 transition-colors disabled:opacity-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span className="font-medium">Delete</span>
+                                </motion.button>
+                              )}
                             </div>
                             {replyingToPostId === post.id && (
                               <div className="mt-4 space-y-2">
@@ -670,6 +746,8 @@ export default function Community() {
                                     setReplyContent={setReplyContent}
                                     createCommentMutation={createCommentMutation}
                                     refetchComments={refetchOpenPostComments}
+                                    deleteCommentMutation={deleteCommentMutation}
+                                    user={user}
                                   />
                                 ))}
                               </div>

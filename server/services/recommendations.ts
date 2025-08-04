@@ -649,7 +649,7 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
         )
         .orderBy(desc(moodEntries.createdAt));
       
-      console.log(`User ${userId} has ${recentMoodEntries.length} mood entries in last 7 days`);
+      //console.log(`User ${userId} has ${recentMoodEntries.length} mood entries in last 7 days`);
       
       if (recentMoodEntries.length < 2) {
         console.log(`User ${userId} has less than 2 mood entries, returning false`);
@@ -664,7 +664,7 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
         entriesByDate.set(dateKey, true);
       });
       
-      console.log(`User ${userId} mood entries by date:`, Array.from(entriesByDate.keys()));
+      //console.log(`User ${userId} mood entries by date:`, Array.from(entriesByDate.keys()));
       
       // Check for any 2 consecutive days
       const today = new Date();
@@ -677,15 +677,15 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
         day2.setDate(day2.getDate() - i - 1);
         const day2Key = day2.toISOString().split('T')[0];
         
-        console.log(`Checking consecutive days: ${day1Key} and ${day2Key}`);
+        //console.log(`Checking consecutive days: ${day1Key} and ${day2Key}`);
         
         if (entriesByDate.has(day1Key) && entriesByDate.has(day2Key)) {
-          console.log(`User ${userId} has consecutive mood logs on ${day1Key} and ${day2Key}`);
+          //console.log(`User ${userId} has consecutive mood logs on ${day1Key} and ${day2Key}`);
           return true; // Found 2 consecutive days
         }
       }
       
-      console.log(`User ${userId} has no consecutive mood logs`);
+      //console.log(`User ${userId} has no consecutive mood logs`);
       return false; // No consecutive days found
     } catch (error) {
       console.error("Error checking consecutive mood logs:", error);

@@ -44,9 +44,13 @@ export interface IStorage {
   // Community operations
   createCommunityPost(post: InsertCommunityPost): Promise<CommunityPost>;
   getCommunityPosts(limit?: number): Promise<(CommunityPost & { replyCount: number })[]>;
+  getCommunityPost(id: number): Promise<CommunityPost | undefined>;
+  deleteCommunityPost(id: number): Promise<void>;
   likePost(postId: number): Promise<void>;
   createPostComment(comment: InsertPostComment): Promise<PostComment>;
   getPostComments(postId: number): Promise<PostComment[]>;
+  getPostComment(id: number): Promise<PostComment | undefined>;
+  deletePostComment(id: number): Promise<void>;
 
   // Progress operations
   getUserProgress(userId: number): Promise<UserProgress | undefined>;
@@ -157,6 +161,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCommunityPosts(limit: number = 10): Promise<(CommunityPost & { replyCount: number })[]> {
+    // First get the posts
     const posts = await db.select({
       id: communityPosts.id,
       userId: communityPosts.userId,
@@ -165,18 +170,29 @@ export class DatabaseStorage implements IStorage {
       likes: communityPosts.likes,
       flagged: communityPosts.flagged,
       createdAt: communityPosts.createdAt,
-      replyCount: sql<number>`(
-        SELECT COUNT(*)::int 
-        FROM ${postComments} 
-        WHERE ${postComments.postId} = ${communityPosts.id}
-      )`
     })
       .from(communityPosts)
       .where(eq(communityPosts.flagged, false))
       .orderBy(desc(communityPosts.createdAt))
       .limit(limit);
     
-    return posts;
+    // Then get the reply counts for each post
+    const postsWithReplyCounts = await Promise.all(
+      posts.map(async (post) => {
+        const [result] = await db.select({
+          replyCount: sql<number>`COUNT(*)::int`
+        })
+          .from(postComments)
+          .where(eq(postComments.postId, post.id));
+        
+        return {
+          ...post,
+          replyCount: result?.replyCount || 0
+        };
+      })
+    );
+    
+    return postsWithReplyCounts;
   }
 
   async likePost(postId: number): Promise<void> {
@@ -195,6 +211,30 @@ export class DatabaseStorage implements IStorage {
       .from(postComments)
       .where(eq(postComments.postId, postId))
       .orderBy(desc(postComments.createdAt));
+  }
+
+  async getCommunityPost(id: number): Promise<CommunityPost | undefined> {
+    const [post] = await db.select()
+      .from(communityPosts)
+      .where(eq(communityPosts.id, id));
+    return post || undefined;
+  }
+
+  async deleteCommunityPost(id: number): Promise<void> {
+    await db.delete(communityPosts)
+      .where(eq(communityPosts.id, id));
+  }
+
+  async getPostComment(id: number): Promise<PostComment | undefined> {
+    const [comment] = await db.select()
+      .from(postComments)
+      .where(eq(postComments.id, id));
+    return comment || undefined;
+  }
+
+  async deletePostComment(id: number): Promise<void> {
+    await db.delete(postComments)
+      .where(eq(postComments.id, id));
   }
 
   async getUserProgress(userId: number): Promise<UserProgress | undefined> {
