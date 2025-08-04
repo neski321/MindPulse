@@ -420,6 +420,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a community post (only by the author)
+  app.delete("/api/community/posts/:id", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      const post = await storage.getCommunityPost(postId);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      if (post.userId !== userId) {
+        return res.status(403).json({ error: "You can only delete your own posts" });
+      }
+
+      await storage.deleteCommunityPost(postId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  // Delete a comment (only by the author)
+  app.delete("/api/community/comments/:id", async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      const comment = await storage.getPostComment(commentId);
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+
+      if (comment.userId !== userId) {
+        return res.status(403).json({ error: "You can only delete your own comments" });
+      }
+
+      await storage.deletePostComment(commentId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
   // Crisis resources
   app.get("/api/crisis-resources", async (req, res) => {
     try {
