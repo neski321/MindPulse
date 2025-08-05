@@ -339,3 +339,82 @@ Respond with JSON in this format:
     return { safe: true };
   }
 }
+
+export async function selectWellnessToolsForIntervention(
+  mood: string,
+  intensity: number,
+  secondaryMood?: string
+): Promise<{ tool1: string; tool2: string; reasoning: string }> {
+  try {
+    const moodDescription = secondaryMood 
+      ? `${mood} and ${secondaryMood}` 
+      : mood;
+    
+    const availableTools = [
+      { id: "breathing-exercise", name: "Breathing Exercise", description: "Immediate calming through controlled breathing" },
+      { id: "sensory-grounding", name: "Sensory Grounding", description: "5-4-3-2-1 grounding technique for acute distress" },
+      { id: "quick-meditation", name: "Quick Meditation", description: "2-minute guided meditation for stress relief" },
+      { id: "cbt-thought-record", name: "CBT Thought Record", description: "Structured thought examination and reframing" },
+      { id: "crisis-safety-planning", name: "Crisis Safety Planning", description: "Create personalized safety plans" },
+      { id: "gratitude-journal", name: "Gratitude Journal", description: "Shift focus to positive aspects" },
+      { id: "body-scan-meditation", name: "Body Scan Meditation", description: "Progressive relaxation for physical tension" },
+      { id: "self-care-menu", name: "Self-Care Menu", description: "AI-powered personalized suggestions" }
+    ];
+
+    const prompt = `A user is experiencing ${moodDescription} at intensity ${intensity}/5. 
+
+Available wellness tools:
+${availableTools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n')}
+
+Select the TWO most appropriate tools for this specific emotional state and intensity level. Consider:
+- For high intensity (4-5): Immediate grounding and crisis tools
+- For moderate intensity (3): Breathing and meditation tools  
+- For anxiety/stress: Breathing and grounding tools
+- For depression/low mood: Gratitude and CBT tools
+- For overwhelming feelings: Crisis planning and grounding tools
+
+Respond with JSON in this format:
+{
+  "tool1": "tool_id",
+  "tool2": "tool_id", 
+  "reasoning": "Brief explanation of why these tools are most appropriate"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: prompt,
+      config: {
+        temperature: 0.3,
+        responseMimeType: "application/json",
+        systemInstruction: "You are a mental health AI that selects the most appropriate wellness tools based on emotional state and intensity. Prioritize safety and immediate effectiveness."
+      },
+    });
+
+    const text = response.text;
+    
+    if (!text) {
+      throw new Error("No response from Gemini");
+    }
+
+    const parsedResult = JSON.parse(text);
+    
+    // Validate that the selected tools exist
+    const validTools = availableTools.map(tool => tool.id);
+    const tool1 = validTools.includes(parsedResult.tool1) ? parsedResult.tool1 : "breathing-exercise";
+    const tool2 = validTools.includes(parsedResult.tool2) ? parsedResult.tool2 : "sensory-grounding";
+    
+    return {
+      tool1,
+      tool2,
+      reasoning: parsedResult.reasoning || "These tools are designed to help with your current emotional state"
+    };
+  } catch (error) {
+    console.error("Error selecting wellness tools:", error);
+    // Return safe defaults
+    return {
+      tool1: "breathing-exercise",
+      tool2: "sensory-grounding",
+      reasoning: "Breathing exercises and grounding techniques can help with difficult emotions"
+    };
+  }
+}

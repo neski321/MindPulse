@@ -238,7 +238,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
             className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -248,6 +248,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
                 <div className="flex items-center space-x-3">
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
                     className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg"
                   >
                     <Sparkles className="w-5 h-5 text-white" />
@@ -259,7 +260,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
                     <p className="text-sm text-gray-600">Discover more ways to support your mental health</p>
                   </div>
                 </div>
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={{ duration: 0.2 }}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -280,18 +281,19 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
                     key={tool.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.1, duration: 0.2 }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <Card 
-                      className={`bg-gradient-to-br ${tool.bg} border-2 ${tool.border} hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden`}
+                      className={`bg-gradient-to-br ${tool.bg} border-2 ${tool.border} hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden`}
                       onClick={() => handleToolClick(tool.id)}
                     >
                       <CardContent className="p-5">
                         <div className="flex items-start space-x-4">
                           <motion.div
                             whileHover={{ scale: 1.1, rotate: 5 }}
+                            transition={{ duration: 0.2 }}
                             className={`w-12 h-12 bg-gradient-to-r ${tool.color} rounded-2xl flex items-center justify-center shadow-md flex-shrink-0`}
                           >
                             <tool.icon className="w-6 h-6 text-white" />
@@ -323,6 +325,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
                               
                               <motion.div
                                 whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.2 }}
                                 className="text-xs font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full"
                               >
                                 Available
@@ -377,6 +380,7 @@ export function WellnessToolsModal({ isOpen, onClose }: WellnessToolsModalProps)
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
                     className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-indigo-200 shadow-sm cursor-pointer"
                     onClick={() => setShowContactSupport(true)}
                   >

@@ -176,12 +176,12 @@ export default function Progress() {
                   <Target className="w-7 h-7 text-white" />
                 </motion.div>
                 <motion.p
-                  key={progress?.totalInterventions}
+                  key={completedInterventions.length}
                   initial={{ scale: 1.2, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   className="text-3xl font-bold text-gray-900"
                 >
-                  {progress?.totalInterventions || 0}
+                  {completedInterventions.length}
                 </motion.p>
                 <p className="text-sm text-gray-600 font-medium">Interventions</p>
               </CardContent>

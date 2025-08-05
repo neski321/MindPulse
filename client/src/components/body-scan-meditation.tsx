@@ -263,7 +263,7 @@ export function BodyScanMeditation({ onClose, onComplete }: BodyScanMeditationPr
 
               <Button
                 onClick={handleStart}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-300 rounded-xl py-3 font-medium"
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-200 rounded-xl py-3 font-medium"
               >
                 Start Body Scan
               </Button>
@@ -433,7 +433,7 @@ export function BodyScanMeditation({ onClose, onComplete }: BodyScanMeditationPr
               <Button
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 rounded-xl py-3 font-medium"
+                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 rounded-xl py-3 font-medium"
               >
                 {isSubmitting ? (
                   <div className="flex items-center space-x-2">

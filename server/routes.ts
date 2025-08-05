@@ -12,7 +12,8 @@ import {
   generatePersonalizedIntervention, 
   generateCBTPrompt, 
   analyzeMoodPattern,
-  moderateContent 
+  moderateContent,
+  selectWellnessToolsForIntervention
 } from "./services/gemini";
 import { recommendationEngine } from "./services/recommendations";
 import { emailService } from "./services/email";
@@ -231,6 +232,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const entries = await storage.getWeeklyMoodData(userId);
       res.json({ entries });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  // Automatic intervention tool selection
+  app.post("/api/interventions/select-tools", async (req, res) => {
+    try {
+      const { mood, intensity, secondaryMood } = req.body;
+      
+      if (!mood || !intensity) {
+        return res.status(400).json({ error: "Missing mood or intensity" });
+      }
+
+      const selectedTools = await selectWellnessToolsForIntervention(
+        mood,
+        intensity,
+        secondaryMood
+      );
+
+      res.json({ selectedTools });
     } catch (error) {
       res.status(500).json({ error: handleError(error) });
     }
@@ -522,6 +544,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const preferences = req.body;
       await recommendationEngine.updateUserPreferences(userId, preferences);
       res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.get("/api/recommendations/:userId/preferences", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const preferences = await recommendationEngine.getUserPreferences(userId);
+      res.json(preferences);
     } catch (error) {
       res.status(500).json({ error: handleError(error) });
     }
