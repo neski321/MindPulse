@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,10 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/AuthContext";
-import { Brain, BookOpen, Clock, Bell, Users, Heart } from "lucide-react";
+import { Brain, BookOpen, Clock, Bell, Users, Heart, Wind, Zap } from "lucide-react";
 
 interface UserPreferences {
   preferredInterventionTypes: string[];
@@ -26,10 +26,10 @@ interface UserPreferences {
 }
 
 const interventionTypes = [
-  { id: 'breathing', label: 'Breathing Exercises', icon: <Brain className="w-4 h-4" /> },
-  { id: 'meditation', label: 'Meditation', icon: <Heart className="w-4 h-4" /> },
-  { id: 'cbt', label: 'CBT Exercises', icon: <Brain className="w-4 h-4" /> },
-  { id: 'grounding', label: 'Grounding Techniques', icon: <Brain className="w-4 h-4" /> },
+  { id: 'breathing', label: 'Breathing Exercises', icon: <Wind className="w-4 h-4" /> },
+  { id: 'meditation', label: 'Meditation & Mindfulness', icon: <Heart className="w-4 h-4" /> },
+  { id: 'cbt', label: 'CBT & Thought Work', icon: <Brain className="w-4 h-4" /> },
+  { id: 'grounding', label: 'Grounding & Crisis Tools', icon: <Zap className="w-4 h-4" /> },
 ];
 
 const contentTypes = [
@@ -59,6 +59,21 @@ export function PreferencesForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Check if user is a guest (no email or demo user)
+  const isGuestUser = !user?.email || user?.email === "demo@example.com" || user?.name === "demo_user";
+  
+  // Load existing preferences
+  const { data: existingPreferences, isLoading } = useQuery({
+    queryKey: ["/api/recommendations", user?.id, "preferences"],
+    queryFn: async () => {
+      if (!user) return null;
+      const response = await fetch(`/api/recommendations/${user.id}/preferences`);
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!user,
+  });
+  
   const [preferences, setPreferences] = useState<UserPreferences>({
     preferredInterventionTypes: ['breathing', 'meditation'],
     preferredContentTypes: ['articles', 'audio'],
@@ -71,6 +86,13 @@ export function PreferencesForm() {
       community_updates: false,
     },
   });
+
+  // Update preferences when existing preferences are loaded
+  useEffect(() => {
+    if (existingPreferences) {
+      setPreferences(existingPreferences);
+    }
+  }, [existingPreferences]);
 
   const updatePreferencesMutation = useMutation({
     mutationFn: async (prefs: UserPreferences) => {
@@ -132,6 +154,14 @@ export function PreferencesForm() {
 
   if (!user) return null;
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -139,7 +169,9 @@ export function PreferencesForm() {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+      <div className="relative">
+        <div className={isGuestUser ? 'blur-sm' : ''}>
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-xl font-bold text-gray-800">
             <Brain className="w-6 h-6 text-blue-500" />
@@ -159,17 +191,15 @@ export function PreferencesForm() {
                 >
                   <Button
                     variant={preferences.preferredInterventionTypes.includes(type.id) ? "default" : "outline"}
-                    className={`w-full justify-start h-auto p-3 ${
+                    className={`w-full justify-start gap-2 h-auto py-3 px-3 text-xs ${
                       preferences.preferredInterventionTypes.includes(type.id)
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-700 border-gray-200"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "bg-white/50 hover:bg-white/80"
                     }`}
                     onClick={() => handleInterventionTypeToggle(type.id)}
                   >
-                    <div className="flex items-center space-x-2">
-                      {type.icon}
-                      <span className="text-sm">{type.label}</span>
-                    </div>
+                    {type.icon}
+                    <span className="text-xs leading-tight">{type.label}</span>
                   </Button>
                 </motion.div>
               ))}
@@ -188,17 +218,15 @@ export function PreferencesForm() {
                 >
                   <Button
                     variant={preferences.preferredContentTypes.includes(type.id) ? "default" : "outline"}
-                    className={`w-full justify-start h-auto p-3 ${
+                    className={`w-full justify-start gap-2 h-auto py-3 px-3 text-xs ${
                       preferences.preferredContentTypes.includes(type.id)
-                        ? "bg-purple-500 text-white"
-                        : "bg-white text-gray-700 border-gray-200"
+                        ? "bg-purple-500 text-white hover:bg-purple-600"
+                        : "bg-white/50 hover:bg-white/80"
                     }`}
                     onClick={() => handleContentTypeToggle(type.id)}
                   >
-                    <div className="flex items-center space-x-2">
-                      {type.icon}
-                      <span className="text-sm">{type.label}</span>
-                    </div>
+                    {type.icon}
+                    <span className="text-xs leading-tight">{type.label}</span>
                   </Button>
                 </motion.div>
               ))}
@@ -290,6 +318,35 @@ export function PreferencesForm() {
           </motion.div>
         </CardContent>
       </Card>
+        </div>
+        {/* Guest user overlay */}
+        {isGuestUser && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+            <div className="text-center space-y-4 p-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto">
+                <Brain className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                  🎯 Personalize Your Experience
+                </h4>
+                <p className="text-gray-600 text-sm mb-4">
+                  Sign up to customize your recommendation preferences and get truly personalized wellness suggestions!
+                </p>
+                <Button
+                  onClick={() => {
+                    // Trigger auth modal
+                    window.dispatchEvent(new CustomEvent('open-auth-modal'));
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+                >
+                  Personalize Now! 🎯
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 } 

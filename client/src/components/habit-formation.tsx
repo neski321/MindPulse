@@ -285,7 +285,7 @@ export function HabitFormation({ onClose, onComplete }: HabitFormationProps) {
               <Button
                 onClick={() => setStep(2)}
                 disabled={!selectedCategory}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 transition-all duration-300 rounded-xl py-3 font-medium disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 transition-all duration-200 rounded-xl py-3 font-medium disabled:opacity-50"
               >
                 Continue
               </Button>

@@ -7,6 +7,7 @@ import { Recommendation } from "../../shared/schema";
 export interface RecommendationEngine {
   generateRecommendations(userId: number): Promise<Recommendation[]>;
   updateUserPreferences(userId: number, preferences: any): Promise<void>;
+  getUserPreferences(userId: number): Promise<any>;
   trackRecommendationInteraction(recommendationId: number | string, action: 'clicked' | 'dismissed'): Promise<void>;
 }
 
@@ -52,7 +53,7 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
       const recommendations = [];
       
       // 1. Mood-based intervention recommendations
-      const moodRecommendations = await this.generateMoodBasedRecommendations(userData, moodPatterns);
+      const moodRecommendations = await this.generateMoodBasedRecommendations(userData, moodPatterns, userPrefs);
       recommendations.push(...moodRecommendations);
       
       // 2. Activity recommendations based on patterns
@@ -151,7 +152,7 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
     };
   }
 
-  private async getUserPreferences(userId: number) {
+  public async getUserPreferences(userId: number) {
     const prefs = await db
       .select()
       .from(userPreferences)
@@ -170,7 +171,7 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
     };
   }
 
-  private async generateMoodBasedRecommendations(userData: any, moodPatterns: any) {
+  private async generateMoodBasedRecommendations(userData: any, moodPatterns: any, userPrefs: any) {
     const recommendations = [];
     const currentTime = new Date();
     const hour = currentTime.getHours();
@@ -180,184 +181,293 @@ export class PersonalizedRecommendationEngine implements RecommendationEngine {
     const currentSecondaryMood = userData.recentMoods[0]?.secondaryMood;
     const currentIntensity = userData.recentMoods[0]?.intensity || moodPatterns.averageIntensity;
     
+    // Helper function to check if user prefers this intervention type
+    const isPreferredInterventionType = (contentType: string) => {
+      return userPrefs.preferredInterventionTypes.includes(contentType);
+    };
+    
+    // Helper function to check if current time matches user's preferred time
+    const isPreferredTimeOfDay = () => {
+      const preferredTime = userPrefs.preferredTimeOfDay;
+      if (preferredTime === 'morning' && hour >= 6 && hour < 11) return true;
+      if (preferredTime === 'afternoon' && hour >= 12 && hour < 17) return true;
+      if (preferredTime === 'evening' && hour >= 18 && hour < 23) return true;
+      if (preferredTime === 'night' && (hour >= 23 || hour < 6)) return true;
+      return false;
+    };
+    
+    // Helper function to get appropriate wellness tool based on category and context
+    const getWellnessToolForCategory = (category: string, context: string = 'general') => {
+      type WellnessTool = {
+        id: string;
+        title: string;
+        duration: string;
+      };
+      
+      type WellnessToolsMap = {
+        [key: string]: {
+          [key: string]: WellnessTool;
+        };
+      };
+      
+      const wellnessTools: WellnessToolsMap = {
+        breathing: {
+          general: { id: 'breathing-exercise', title: 'Breathing Exercise', duration: '3 min' },
+          stress: { id: 'stress-release-breathing', title: 'Stress Release Breathing', duration: '4 min' },
+          anxiety: { id: 'anxiety-relief-breathing', title: 'Anxiety Relief Breathing', duration: '4 min' },
+          quick: { id: 'quick-reset-breathing', title: 'Quick Reset Breathing', duration: '2 min' }
+        },
+        meditation: {
+          general: { id: 'quick-meditation', title: 'Quick Meditation', duration: '3 min' },
+          morning: { id: 'mindful-morning', title: 'Mindful Morning', duration: '3 min' },
+          evening: { id: 'evening-wind-down', title: 'Evening Wind-Down', duration: '5 min' },
+          body: { id: 'body-scan', title: 'Body Scan Meditation', duration: '4 min' },
+          gratitude: { id: 'gratitude-journal', title: 'Gratitude Journal', duration: '3 min' }
+        },
+        cbt: {
+          general: { id: 'cbt-worksheet', title: 'CBT Thought Record', duration: '5 min' },
+          crisis: { id: 'crisis-safety', title: 'Crisis Safety Planning', duration: '10 min' },
+          thought: { id: 'thought-checkin', title: 'Thought Check-In', duration: '5 min' }
+        },
+        grounding: {
+          general: { id: 'grounding-tools', title: 'Sensory Grounding', duration: '2 min' },
+          crisis: { id: 'immediate-grounding', title: 'Immediate Grounding', duration: '2 min' },
+          anxiety: { id: 'grounding-exercise', title: 'Grounding Exercise', duration: '3 min' }
+        }
+      };
+      
+      return wellnessTools[category]?.[context] || wellnessTools[category]?.general;
+    };
+    
     // Morning recommendations (6-11 AM)
     if (hour >= 6 && hour < 11) {
       if (currentMood === 'anxious' || currentMood === 'stressed') {
-        recommendations.push({
-          type: 'intervention',
-          title: 'Morning Calm',
-          description: 'Start your day with a gentle breathing exercise to center yourself',
-          contentType: 'breathing',
-          reason: `Based on your ${currentMood} mood, this morning breathing exercise can help set a positive tone for your day`,
-          priority: 5,
-          contentId: 'morning-breathing-5min'
-        });
+        if (isPreferredInterventionType('breathing')) {
+          const tool = getWellnessToolForCategory('breathing', currentMood === 'anxious' ? 'anxiety' : 'stress');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: `Start your day with a gentle ${tool.title.toLowerCase()} to center yourself`,
+            contentType: 'breathing',
+            reason: `Based on your ${currentMood} mood, this morning breathing exercise can help set a positive tone for your day`,
+            priority: isPreferredTimeOfDay() ? 5 : 4,
+            contentId: tool.id
+          });
+        }
       } else if (currentMood === 'joy' || currentMood === 'calm') {
-        recommendations.push({
-          type: 'intervention',
-          title: 'Gratitude Meditation',
-          description: 'Build on your positive energy with a gratitude practice',
-          contentType: 'meditation',
-          reason: 'You\'re feeling great! This gratitude meditation can amplify your positive mood',
-          priority: 4,
-          contentId: 'gratitude-meditation-3min'
-        });
+        if (isPreferredInterventionType('meditation')) {
+          const tool = getWellnessToolForCategory('meditation', 'gratitude');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: 'Build on your positive energy with a gratitude practice',
+            contentType: 'meditation',
+            reason: 'You\'re feeling great! This gratitude meditation can amplify your positive mood',
+            priority: isPreferredTimeOfDay() ? 5 : 4,
+            contentId: tool.id
+          });
+        }
       }
       
-      // Add a general morning recommendation
-      recommendations.push({
-        type: 'intervention',
-        title: 'Mindful Morning',
-        description: 'A gentle 3-minute mindfulness practice to start your day',
-        contentType: 'meditation',
-        reason: 'Morning mindfulness can set a positive tone for your entire day',
-        priority: 3,
-        contentId: 'mindful-morning-3min'
-      });
+      // Add a general morning recommendation based on preferences
+      if (isPreferredInterventionType('meditation')) {
+        const tool = getWellnessToolForCategory('meditation', 'morning');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'A gentle mindfulness practice to start your day',
+          contentType: 'meditation',
+          reason: 'Morning mindfulness can set a positive tone for your entire day',
+          priority: isPreferredTimeOfDay() ? 4 : 3,
+          contentId: tool.id
+        });
+      }
     }
     
     // Afternoon recommendations (12-5 PM)
     if (hour >= 12 && hour < 17) {
       if (currentMood === 'stressed' || currentIntensity > 3) {
-        recommendations.push({
-          type: 'intervention',
-          title: 'Quick Reset',
-          description: 'A 2-minute breathing break to help you refocus',
-          contentType: 'breathing',
-          reason: 'You seem to be experiencing some stress. This quick reset can help you regain focus',
-          priority: 5,
-          contentId: 'quick-reset-breathing-2min'
-        });
+        if (isPreferredInterventionType('breathing')) {
+          const tool = getWellnessToolForCategory('breathing', 'quick');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: 'A quick breathing break to help you refocus',
+            contentType: 'breathing',
+            reason: 'You seem to be experiencing some stress. This quick reset can help you regain focus',
+            priority: isPreferredTimeOfDay() ? 5 : 4,
+            contentId: tool.id
+          });
+        }
       }
       
-      // Add afternoon energy boost
-      recommendations.push({
-        type: 'intervention',
-        title: 'Energy Boost',
-        description: 'A quick 2-minute energizing breathing exercise',
-        contentType: 'breathing',
-        reason: 'Afternoon energy dip? This quick exercise can help you feel more alert',
-        priority: 3,
-        contentId: 'energy-boost-2min'
-      });
+      // Add afternoon energy boost based on preferences
+      if (isPreferredInterventionType('breathing')) {
+        const tool = getWellnessToolForCategory('breathing', 'general');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'A quick energizing breathing exercise',
+          contentType: 'breathing',
+          reason: 'Afternoon energy dip? This quick exercise can help you feel more alert',
+          priority: isPreferredTimeOfDay() ? 4 : 3,
+          contentId: tool.id
+        });
+      }
     }
     
     // Evening recommendations (6-11 PM)
     if (hour >= 18 && hour < 23) {
       if (currentMood === 'anxious' || currentMood === 'stressed') {
+        if (isPreferredInterventionType('meditation')) {
+          const tool = getWellnessToolForCategory('meditation', 'evening');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: 'Gentle meditation to help you relax before sleep',
+            contentType: 'meditation',
+            reason: 'Help yourself unwind from the day with this calming evening practice',
+            priority: isPreferredTimeOfDay() ? 5 : 4,
+            contentId: tool.id
+          });
+        }
+      }
+      
+      // Add evening relaxation based on preferences
+      if (isPreferredInterventionType('meditation')) {
+        const tool = getWellnessToolForCategory('meditation', 'body');
         recommendations.push({
           type: 'intervention',
-          title: 'Evening Wind-Down',
-          description: 'Gentle meditation to help you relax before sleep',
+          title: tool.title,
+          description: 'Release tension with this guided muscle relaxation',
           contentType: 'meditation',
-          reason: 'Help yourself unwind from the day with this calming evening practice',
+          reason: 'Perfect for unwinding after a busy day',
+          priority: isPreferredTimeOfDay() ? 4 : 3,
+          contentId: tool.id
+        });
+      }
+    }
+    
+    // Add general recommendations based on mood and preferences
+    if (currentMood === 'anxious') {
+      if (isPreferredInterventionType('grounding')) {
+        const tool = getWellnessToolForCategory('grounding', 'anxiety');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'Use your senses to anchor yourself in the present moment',
+          contentType: 'grounding',
+          reason: 'Grounding techniques can help you feel more centered when anxious',
           priority: 4,
-          contentId: 'evening-wind-down-5min'
+          contentId: tool.id
         });
       }
       
-      // Add evening relaxation
-      recommendations.push({
-        type: 'intervention',
-        title: 'Progressive Relaxation',
-        description: 'Release tension with this guided muscle relaxation',
-        contentType: 'meditation',
-        reason: 'Perfect for unwinding after a busy day',
-        priority: 3,
-        contentId: 'progressive-relaxation-5min'
-      });
-    }
-    
-    // Add general recommendations based on mood
-    if (currentMood === 'anxious') {
-      recommendations.push({
-        type: 'intervention',
-        title: 'Anxiety Relief',
-        description: 'A specialized breathing technique for anxiety',
-        contentType: 'breathing',
-        reason: 'This technique is specifically designed to help with anxiety symptoms',
-        priority: 4,
-        contentId: 'anxiety-relief-breathing-4min'
-      });
+      if (isPreferredInterventionType('cbt')) {
+        const tool = getWellnessToolForCategory('cbt', 'thought');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'Identify and challenge anxious thoughts with CBT techniques',
+          contentType: 'cbt',
+          reason: 'CBT can help you understand and manage anxious thoughts',
+          priority: 4,
+          contentId: tool.id
+        });
+      }
     }
     
     if (currentMood === 'stressed') {
-      recommendations.push({
-        type: 'intervention',
-        title: 'Stress Release',
-        description: 'A 4-minute stress relief breathing pattern',
-        contentType: 'breathing',
-        reason: 'This pattern helps activate your body\'s natural relaxation response',
-        priority: 4,
-        contentId: 'stress-release-4min'
-      });
+      if (isPreferredInterventionType('breathing')) {
+        const tool = getWellnessToolForCategory('breathing', 'stress');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'Deep breathing technique to release tension and stress',
+          contentType: 'breathing',
+          reason: 'This breathing exercise is specifically designed to help with stress relief',
+          priority: 4,
+          contentId: tool.id
+        });
+      }
+      
+      if (isPreferredInterventionType('meditation')) {
+        const tool = getWellnessToolForCategory('meditation', 'body');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'A guided meditation to help you release stress and tension',
+          contentType: 'meditation',
+          reason: 'Meditation can help you find calm in stressful situations',
+          priority: 4,
+          contentId: tool.id
+        });
+      }
     }
-
+    
+    if (currentMood === 'joy' || currentMood === 'calm') {
+      if (isPreferredInterventionType('meditation')) {
+        const tool = getWellnessToolForCategory('meditation', 'gratitude');
+        recommendations.push({
+          type: 'intervention',
+          title: tool.title,
+          description: 'Extend positive feelings to yourself and others',
+          contentType: 'meditation',
+          reason: 'Build on your positive energy with this heart-opening practice',
+          priority: 3,
+          contentId: tool.id
+        });
+      }
+    }
+    
     // Enhanced recommendations using secondary mood data
     if (currentSecondaryMood) {
       // Crisis prevention for overwhelmed users
       if (currentMood === 'stressed' && currentSecondaryMood === 'overwhelmed') {
-        recommendations.push({
-          type: 'intervention',
-          title: 'Crisis Safety Planning',
-          description: 'Create a personalized safety plan for overwhelming moments',
-          contentType: 'cbt',
-          reason: 'Feeling overwhelmed can be challenging. A safety plan can help you navigate difficult moments.',
-          priority: 5,
-          contentId: 'crisis-safety-planning'
-        });
+        if (isPreferredInterventionType('cbt')) {
+          const tool = getWellnessToolForCategory('cbt', 'crisis');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: 'Create a personalized safety plan for overwhelming moments',
+            contentType: 'cbt',
+            reason: 'Feeling overwhelmed can be challenging. A safety plan can help you navigate difficult moments.',
+            priority: 5,
+            contentId: tool.id
+          });
+        }
       }
 
       // Immediate grounding for panicked users
       if (currentMood === 'anxious' && currentSecondaryMood === 'panicked') {
-        recommendations.push({
-          type: 'intervention',
-          title: 'Immediate Grounding',
-          description: 'Quick grounding techniques for acute anxiety',
-          contentType: 'grounding',
-          reason: 'When feeling panicked, grounding techniques can help you find your center quickly.',
-          priority: 5,
-          contentId: 'immediate-grounding-2min'
-        });
+        if (isPreferredInterventionType('grounding')) {
+          const tool = getWellnessToolForCategory('grounding', 'crisis');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: 'Quick grounding techniques for acute anxiety',
+            contentType: 'grounding',
+            reason: 'When feeling panicked, grounding techniques can help you find your center quickly.',
+            priority: 5,
+            contentId: tool.id
+          });
+        }
       }
 
       // Gratitude practice for grateful users
       if (currentMood === 'joy' && currentSecondaryMood === 'grateful') {
-        recommendations.push({
-          type: 'activity',
-          title: 'Gratitude Journal',
-          description: 'Build on your grateful feeling with a gratitude practice',
-          contentType: 'activity',
-          reason: 'Your gratitude is beautiful! This practice can amplify your positive feelings.',
-          priority: 4,
-          contentId: 'gratitude-journal'
-        });
-      }
-
-      // Energy channeling for energetic users
-      if (currentMood === 'joy' && currentSecondaryMood === 'energetic') {
-        recommendations.push({
-          type: 'activity',
-          title: 'Channel Your Energy',
-          description: 'Use your positive energy for a productive activity',
-          contentType: 'activity',
-          reason: 'Great energy! Channel it into something meaningful.',
-          priority: 4,
-          contentId: 'energy-channeling'
-        });
-      }
-
-      // Sleep support for tired users
-      if (currentMood === 'neutral' && currentSecondaryMood === 'tired') {
-        recommendations.push({
-          type: 'intervention',
-          title: 'Gentle Sleep Prep',
-          description: 'A calming routine to help you rest',
-          contentType: 'meditation',
-          reason: 'Rest is important. This gentle practice can help you prepare for sleep.',
-          priority: 4,
-          contentId: 'sleep-prep-5min'
-        });
+        if (isPreferredInterventionType('meditation')) {
+          const tool = getWellnessToolForCategory('meditation', 'gratitude');
+          recommendations.push({
+            type: 'intervention',
+            title: tool.title,
+            description: 'Build on your grateful feeling with a gratitude practice',
+            contentType: 'meditation',
+            reason: 'Your gratitude is beautiful! This practice can amplify your positive feelings.',
+            priority: 4,
+            contentId: tool.id
+          });
+        }
       }
     }
     

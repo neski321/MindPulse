@@ -214,7 +214,7 @@ export function SleepTracker({ onClose, onComplete }: SleepTrackerProps) {
 
               <Button
                 onClick={() => setStep(2)}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 rounded-xl py-3 font-medium"
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 rounded-xl py-3 font-medium"
               >
                 Continue
               </Button>
@@ -293,7 +293,7 @@ export function SleepTracker({ onClose, onComplete }: SleepTrackerProps) {
                 </Button>
                 <Button
                   onClick={() => setStep(3)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 rounded-xl py-3 font-medium"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 rounded-xl py-3 font-medium"
                 >
                   Continue
                 </Button>
@@ -357,7 +357,7 @@ export function SleepTracker({ onClose, onComplete }: SleepTrackerProps) {
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-300 rounded-xl py-3 font-medium"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-200 rounded-xl py-3 font-medium"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center space-x-2">

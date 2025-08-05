@@ -198,7 +198,7 @@ export function CBTThoughtRecord({ onClose, onComplete }: CBTThoughtRecordProps)
               <Button
                 onClick={() => setStep(2)}
                 disabled={!situation.trim()}
-                className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 rounded-xl py-3 font-medium disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 rounded-xl py-3 font-medium disabled:opacity-50"
               >
                 Continue
               </Button>
@@ -279,7 +279,7 @@ export function CBTThoughtRecord({ onClose, onComplete }: CBTThoughtRecordProps)
                 <Button
                   onClick={() => setStep(3)}
                   disabled={!thought.trim() || !emotion.trim()}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-300 rounded-xl py-3 font-medium disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 rounded-xl py-3 font-medium disabled:opacity-50"
                 >
                   Continue
                 </Button>
@@ -339,7 +339,7 @@ export function CBTThoughtRecord({ onClose, onComplete }: CBTThoughtRecordProps)
                 <Button
                   onClick={() => setStep(4)}
                   disabled={!evidenceFor.trim() || !evidenceAgainst.trim()}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-300 rounded-xl py-3 font-medium disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-200 rounded-xl py-3 font-medium disabled:opacity-50"
                 >
                   Continue
                 </Button>
@@ -399,7 +399,7 @@ export function CBTThoughtRecord({ onClose, onComplete }: CBTThoughtRecordProps)
                 <Button
                   onClick={() => setStep(5)}
                   disabled={!reframedThought.trim()}
-                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 rounded-xl py-3 font-medium disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 rounded-xl py-3 font-medium disabled:opacity-50"
                 >
                   Continue
                 </Button>
@@ -472,7 +472,7 @@ export function CBTThoughtRecord({ onClose, onComplete }: CBTThoughtRecordProps)
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 transition-all duration-300 rounded-xl py-3 font-medium"
+                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 transition-all duration-200 rounded-xl py-3 font-medium"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center space-x-2">

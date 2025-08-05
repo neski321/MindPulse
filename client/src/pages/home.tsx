@@ -22,6 +22,13 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { RecommendationsCard } from "@/components/recommendations-card";
 import { WellnessToolsModal } from "@/components/ui/wellness-tools-modal";
 import { ProfilePopup } from "@/components/ui/profile-popup";
+import { AutomaticInterventionModal } from "@/components/ui/automatic-intervention-modal";
+import { SensoryGrounding } from "@/components/sensory-grounding";
+import { CBTThoughtRecord } from "@/components/cbt-thought-record";
+import { CrisisSafetyPlanning } from "@/components/crisis-safety-planning";
+import { GratitudeJournal } from "@/components/gratitude-journal";
+import { BodyScanMeditation } from "@/components/body-scan-meditation";
+import { SelfCareMenu } from "@/components/self-care-menu";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -91,6 +98,19 @@ export default function Home() {
   const [showGuestDataWarning, setShowGuestDataWarning] = useState(false);
   const [showWellnessTools, setShowWellnessTools] = useState(false);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [showAutomaticIntervention, setShowAutomaticIntervention] = useState(false);
+  const [interventionData, setInterventionData] = useState<{
+    mood: string;
+    intensity: number;
+    secondaryMood?: string;
+    selectedTools: { tool1: string; tool2: string; reasoning: string };
+  } | null>(null);
+  const [pendingInterventionMood, setPendingInterventionMood] = useState<{
+    mood: string;
+    intensity: number;
+    secondaryMood?: string;
+  } | null>(null);
+  const [selectedToolFromIntervention, setSelectedToolFromIntervention] = useState<string | null>(null);
   const { magnetEffect } = useSettings();
   const moodTrackerRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
@@ -254,10 +274,123 @@ export default function Home() {
     },
   })
 
+  const toolSelectionMutation = useMutation({
+    mutationFn: async ({ mood, intensity, secondaryMood }: { mood: string; intensity: number; secondaryMood?: string }) => {
+      const response = await apiRequest("POST", "/api/interventions/select-tools", {
+        mood,
+        intensity,
+        secondaryMood,
+      })
+      return response.json()
+    },
+    onSuccess: (data) => {
+      if (pendingInterventionMood) {
+        setInterventionData({
+          mood: pendingInterventionMood.mood,
+          intensity: pendingInterventionMood.intensity,
+          secondaryMood: pendingInterventionMood.secondaryMood,
+          selectedTools: data.selectedTools
+        })
+        setShowAutomaticIntervention(true)
+        setPendingInterventionMood(null)
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Error selecting tools:", error)
+    },
+  })
+
   const handleMoodSelect = (mood: string, intensity: number, secondaryMood?: string) => {
     setSelectedMood(mood)
     moodMutation.mutate({ mood, intensity, secondaryMood })
+    
+    // Check if this is an extreme negative emotion that should trigger automatic intervention
+    const extremeNegativeMoods = ['anxious', 'stressed', 'overwhelmed', 'panicked', 'fearful', 'worried', 'uneasy', 'frustrated', 'pressured', 'tense'];
+    const isExtremeNegative = extremeNegativeMoods.includes(mood) && intensity >= 4;
+    const isSecondaryExtreme = secondaryMood && extremeNegativeMoods.includes(secondaryMood) && intensity >= 4;
+    
+    if (isExtremeNegative || isSecondaryExtreme) {
+      setPendingInterventionMood({ mood, intensity, secondaryMood })
+      toolSelectionMutation.mutate({ mood, intensity, secondaryMood })
+    }
   }
+
+  const renderSelectedTool = () => {
+    if (!selectedToolFromIntervention) return null;
+    
+    const handleCloseTool = () => {
+      setSelectedToolFromIntervention(null);
+    };
+    
+    switch (selectedToolFromIntervention) {
+      case "breathing-exercise":
+        return <BreathingExercise onClose={handleCloseTool} />;
+      case "sensory-grounding":
+        return (
+          <SensoryGrounding 
+            onClose={handleCloseTool}
+            onComplete={(data) => {
+              console.log("Grounding completed:", data);
+              handleCloseTool();
+            }}
+          />
+        );
+      case "quick-meditation":
+        return <QuickMeditation onComplete={handleCloseTool} />;
+      case "cbt-thought-record":
+        return (
+          <CBTThoughtRecord 
+            onClose={handleCloseTool}
+            onComplete={(data) => {
+              console.log("CBT completed:", data);
+              handleCloseTool();
+            }}
+          />
+        );
+      case "crisis-safety-planning":
+        return (
+          <CrisisSafetyPlanning 
+            onClose={handleCloseTool}
+            onComplete={(data) => {
+              console.log("Safety planning completed:", data);
+              handleCloseTool();
+            }}
+          />
+        );
+      case "gratitude-journal":
+        return (
+          <GratitudeJournal 
+            onClose={handleCloseTool}
+            onComplete={(data) => {
+              console.log("Gratitude journal completed:", data);
+              handleCloseTool();
+            }}
+          />
+        );
+      case "body-scan-meditation":
+        return (
+          <BodyScanMeditation 
+            onClose={handleCloseTool}
+            onComplete={(data) => {
+              console.log("Body scan completed:", data);
+              handleCloseTool();
+            }}
+          />
+        );
+      case "self-care-menu":
+        return (
+          <SelfCareMenu 
+            onClose={handleCloseTool}
+            onComplete={(data) => {
+              console.log("Self care completed:", data);
+              handleCloseTool();
+            }}
+          />
+        );
+      default:
+        return <BreathingExercise onClose={handleCloseTool} />;
+    }
+  };
 
   // Show a subtle loading indicator instead of blocking the entire page
   const LoadingIndicator = () => (
@@ -311,6 +444,43 @@ export default function Home() {
           onCreateAccount={handleCreateAccount}
         />
       )}
+      {showAutomaticIntervention && interventionData && (
+        <AutomaticInterventionModal
+          isOpen={showAutomaticIntervention}
+          onClose={() => setShowAutomaticIntervention(false)}
+          onToolSelect={(toolId) => {
+            setSelectedToolFromIntervention(toolId);
+            // Don't immediately close the modal, let it close with the delay
+          }}
+          mood={interventionData.mood}
+          intensity={interventionData.intensity}
+          secondaryMood={interventionData.secondaryMood}
+          selectedTools={interventionData.selectedTools}
+        />
+      )}
+      
+      {/* Selected Tool Modal */}
+      <AnimatePresence>
+        {selectedToolFromIntervention && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="relative w-full max-w-md"
+            >
+              {renderSelectedTool()}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="min-h-screen">
         <motion.div
           variants={containerVariants}
@@ -449,13 +619,13 @@ export default function Home() {
               >
                 <Button
                   variant="outline"
-                  className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 rounded-2xl py-6 text-gray-600 hover:text-blue-600 font-medium"
+                  className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 rounded-2xl py-6 text-gray-600 hover:text-blue-600 font-medium"
                   onClick={() => setShowWellnessTools(true)}
                 >
                   <div className="flex items-center space-x-3">
                     <motion.div
                       whileHover={{ rotate: 90 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.2 }}
                       className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center shadow-md"
                     >
                       <Plus className="w-4 h-4 text-white" />
